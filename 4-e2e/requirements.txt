@@ -1,0 +1,6 @@
+# 端到端测试（视频换声）需要的依赖
+# 说明：torch / torchaudio 走 cu118 专用源，由 安装环境.bat 单独先装，这里不再列
+pymss
+numpy<2
+soundfile
+requests

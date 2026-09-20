@@ -1,0 +1,55 @@
+# =====================================================================
+# 本仓库只提交我自己写的部分：总控页、自研服务、启动/自测脚本、便携化工具、文档。
+# 三个引擎仓库本体（RVC / GPT-SoVITS / so-vits-svc）、runtime 便携环境、
+# 模型权重、ffmpeg、测试输入输出都不入库，按 README.md 部署。
+# =====================================================================
+
+# ---- 引擎目录：只保留我加的脚本/说明/依赖清单/自研服务 ----
+/1-rvc/*
+!/1-rvc/启动.bat
+!/1-rvc/停止.bat
+!/1-rvc/运行测试.bat
+!/1-rvc/安装环境.bat
+!/1-rvc/说明.md
+!/1-rvc/转为便携环境.py
+!/1-rvc/requirments_cpu_py312.txt
+!/1-rvc/requirments_cu118_py312.txt
+!/1-rvc/requirments_cu128_py312.txt
+!/1-rvc/tests/
+
+/2-gpt-sovits/*
+!/2-gpt-sovits/启动.bat
+!/2-gpt-sovits/停止.bat
+!/2-gpt-sovits/启动界面.bat
+!/2-gpt-sovits/运行测试.bat
+!/2-gpt-sovits/安装环境.bat
+!/2-gpt-sovits/说明.md
+!/2-gpt-sovits/转为便携环境.py
+!/2-gpt-sovits/requirements-local.txt
+!/2-gpt-sovits/tests/
+
+/3-so-vits-svc/*
+!/3-so-vits-svc/启动.bat
+!/3-so-vits-svc/停止.bat
+!/3-so-vits-svc/运行测试.bat
+!/3-so-vits-svc/安装环境.bat
+!/3-so-vits-svc/说明.md
+!/3-so-vits-svc/svc_service.py
+!/3-so-vits-svc/requirements-infer.txt
+!/3-so-vits-svc/tests/
+
+# ---- 我自己的项目，整个入库（排除环境/产物）----
+/0-web/runtime/
+/0-web/输出/
+/4-e2e/runtime/
+/4-e2e/models/
+/4-e2e/输出/
+
+# ---- 需求原稿不入库 ----
+部署文档.txt
+
+# ---- 环境与产物 ----
+runtime/
+.workbuddy-ai/
+__pycache__/
+*.log

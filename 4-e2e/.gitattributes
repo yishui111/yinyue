@@ -1,0 +1,5 @@
+# Windows 批处理必须存 CRLF：纯 LF 时 cmd.exe 会在错误位置断行，
+# 把一行切成两截（中文还会吃掉后面一个 ASCII 字节，如 json 变 son），
+# 报一堆「xxx 不是内部或外部命令」。这条优先级高于 core.autocrlf，换机器也不复发。
+*.bat text eol=crlf
+*.cmd text eol=crlf

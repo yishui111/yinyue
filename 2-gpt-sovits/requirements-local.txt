@@ -1,0 +1,43 @@
+numpy<2.0
+scipy
+tensorboard
+librosa==0.10.2
+numba
+pytorch-lightning>=2.4
+gradio<5
+ffmpeg-python
+onnxruntime; platform_machine == "aarch64" or platform_machine == "arm64"
+onnxruntime-gpu; platform_machine == "x86_64" or platform_machine == "AMD64"
+tqdm
+funasr>=1.3.7
+cn2an
+pypinyin
+g2p_en
+torchaudio
+modelscope
+sentencepiece
+transformers==4.49.0
+peft<0.18.0
+chardet
+PyYAML
+psutil
+jieba
+split-lang
+fast_langdetect>=0.3.1
+wordsegment
+rotary_embedding_torch
+ToJyutping 
+g2pk2
+ko_pron
+fastapi[standard]>=0.115.2
+# starlette 必须留在 0.x：1.x 改了 TemplateResponse 的调用约定，
+# gradio 4.x 会把 dict 当成模板名传进去，启动时报
+# "TypeError: unhashable type 'dict'" 并被 gradio 误判成
+# "When localhost is not accessible ..." 而拒绝启动。fastapi 只约束 >=0.46.0，所以这里钉住。
+starlette<1.0
+x_transformers
+torchmetrics<=1.5
+pydantic<=2.10.6
+ctranslate2>=4.0,<5
+av>=11
+tqdm

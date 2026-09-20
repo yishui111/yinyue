@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二次元唱歌换声 · 总控页</title>
+<style>
+  :root {
+    --bg: #0f1220; --card: #181c2f; --card2: #1f2440; --line: #2b3154;
+    --tx: #e8eaf6; --dim: #9aa1c0; --ok: #3ddc84; --bad: #ff5d73; --warn: #ffc24b;
+    --acc: #7c8cff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--tx);
+    font: 15px/1.6 "Microsoft YaHei", "PingFang SC", sans-serif;
+  }
+  header { max-width: 1280px; margin: 0 auto 18px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--dim); font-size: 13px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .pill {
+    display: flex; align-items: center; gap: 8px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font-size: 13px;
+  }
+  .pill b { font-weight: 600; }
+  .pill .u { color: var(--dim); font-size: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .dot.off { background: var(--bad); }
+  .grid {
+    max-width: 1280px; margin: 0 auto; display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card h2 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+  .card h2 .dot { margin-left: auto; }
+  .meta { color: var(--dim); font-size: 12.5px; margin-top: -6px; }
+  .meta a { color: var(--acc); text-decoration: none; }
+  label { font-size: 13px; color: var(--dim); display: block; margin: 0 0 4px; }
+  select, input[type=text], input[type=number], textarea {
+    width: 100%; background: var(--card2); color: var(--tx); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font: inherit;
+  }
+  textarea { resize: vertical; min-height: 72px; }
+  input[type=file] { color: var(--dim); font-size: 13px; width: 100%; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .chk { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--tx); }
+  .chk input { width: auto; }
+  button {
+    background: var(--acc); color: #fff; border: 0; border-radius: 8px;
+    padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--tx);
+    font-weight: 400; text-decoration: none; display: inline-block;
+  }
+  .msg { font-size: 13px; min-height: 18px; white-space: pre-wrap; color: var(--dim); }
+  .msg.err { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  audio, video { width: 100%; border-radius: 8px; }
+  video { max-height: 260px; background: #000; }
+  .dl { font-size: 13px; }
+  .dl a { color: var(--acc); }
+  .hint { color: var(--dim); font-size: 12.5px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  pre.log {
+    background: #0b0e1a; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; font-size: 12px; max-height: 150px; overflow: auto;
+    white-space: pre-wrap; color: #b9c2e8; margin: 0;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>二次元唱歌换声 · 总控页</h1>
+  <div class="sub">一个页面对应四个项目：每个板块与一个服务/目录一一对应，下面的状态灯就是对应服务的真实健康状态。</div>
+  <div class="pills" id="pills">加载中…</div>
+</header>
+
+<div class="grid">
+
+  <!-- 板块 1：so-vits 唱歌换声 -->
+  <section class="card" id="card-svc">
+    <h2>🎤 唱歌换声 <span class="dot" id="dot-svc"></span></h2>
+    <div class="meta">对应目录 3-so-vits-svc · 服务 <a href="http://127.0.0.1:6843" target="_blank">127.0.0.1:6843</a></div>
+    <div>
+      <label>角色模型（来自服务 /models 接口）</label>
+      <select id="svc-role"></select>
+    </div>
+    <div>
+      <label>干声 wav（要换声的人声，不含伴奏效果更好）</label>
+      <input type="file" id="svc-file" accept="audio/wav,audio/*">
+    </div>
+    <div class="row">
+      <div>
+        <label>变调（半音，男转女常用 -12~0，女转男 0~12）</label>
+        <input type="number" id="svc-transpose" value="0" step="1">
+      </div>
+      <div style="align-self:end">
+        <span class="chk"><input type="checkbox" id="svc-autof0" checked> 自动跟调（auto_f0）</span>
+      </div>
+    </div>
+    <div><button id="svc-go">开始换声</button></div>
+    <div class="msg" id="svc-msg"></div>
+    <div id="svc-result"></div>
+    <div class="hint">调用的真实接口：POST /svc/change_voice（和 e2e 流水线用的是同一个）。</div>
+  </section>
+
+  <!-- 板块 2：GPT-SoVITS 文字转语音 -->
+  <section class="card" id="card-tts">
+    <h2>🗨️ 文字转语音 <span class="dot" id="dot-tts"></span></h2>
+    <div class="meta">对应目录 2-gpt-sovits · 服务 <a href="http://127.0.0.1:9880" target="_blank">127.0.0.1:9880</a></div>
+    <div>
+      <label>角色（来自 models\ 目录下的 ref 四件套）</label>
+      <select id="tts-role"></select>
+    </div>
+    <div>
+      <label>要念的文本（中文）</label>
+      <textarea id="tts-text">晚上好，夜风舒畅，会是一个良宵呢。</textarea>
+    </div>
+    <div><button id="tts-go">生成语音</button></div>
+    <div class="msg" id="tts-msg"></div>
+    <div id="tts-result"></div>
+    <div class="hint">真实流程：先 /set_gpt_weights、/set_sovits_weights 切到角色权重，再 POST /tts 零样本合成。</div>
+  </section>
+
+  <!-- 板块 3：RVC -->
+  <section class="card" id="card-rvc">
+    <h2>🎛️ RVC 换声 <span class="dot" id="dot-rvc"></span></h2>
+    <div class="meta">对应目录 1-rvc · WebUI <a href="http://127.0.0.1:7865" target="_blank">127.0.0.1:7865</a> · <a href="http://127.0.0.1:7865" target="_blank"><b>打开完整界面 ↗</b></a></div>
+    <div>
+      <label>音色（来自 assets\weights 的已训练模型）</label>
+      <select id="rvc-role"></select>
+    </div>
+    <div>
+      <label>干声 wav（说话/唱歌都行，只换音色不变时长）</label>
+      <input type="file" id="rvc-file" accept="audio/wav,audio/*">
+    </div>
+    <div><button id="rvc-go">RVC 换声</button></div>
+    <div class="msg" id="rvc-msg"></div>
+    <div id="rvc-result"></div>
+    <div class="hint">走 1-rvc 同款推理管线（rmvpe + 索引），首次要加载模型，约 10~30 秒；训练请用完整 WebUI。</div>
+  </section>
+
+  <!-- 板块 4：端到端视频 -->
+  <section class="card" id="card-e2e">
+    <h2>🎬 视频换声（端到端） <span class="dot" id="dot-e2e"></span></h2>
+    <div class="meta">对应目录 4-e2e · 分离人声 → 6843 换声 → 混回视频（画面原样保留）</div>
+    <div>
+      <label>角色（so-vits 的角色模型）</label>
+      <select id="e2e-role"></select>
+    </div>
+    <div>
+      <label>视频（不选就用 4-e2e\testdata\输入.mp4）</label>
+      <input type="file" id="e2e-file" accept="video/mp4,video/*">
+    </div>
+    <div><button id="e2e-go">开始转换</button></div>
+    <div class="msg" id="e2e-msg"></div>
+    <pre class="log" id="e2e-log" style="display:none"></pre>
+    <div id="e2e-result"></div>
+    <div class="hint">真实流程：运行 4-e2e\e2e_test.py（提音轨 → bs_roformer 分离 → so-vits 换声 → 混音封装），约 1 分钟。</div>
+  </section>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const msg = (id, text, cls) => { const el = $(id); el.textContent = text || ""; el.className = "msg" + (cls ? " " + cls : ""); };
+
+/* ---------- 状态灯：对应四个服务的真实健康 ---------- */
+async function refreshStatus() {
+  let items;
+  try { items = await (await fetch("/api/status")).json(); }
+  catch { items = null; }
+  const pills = $("pills");
+  if (!items) { pills.innerHTML = "<div class='pill'>总控服务异常</div>"; return; }
+  pills.innerHTML = "";
+  for (const it of items) {
+    const d = document.createElement("div");
+    d.className = "pill";
+    d.innerHTML = "<span class='dot " + (it.up ? "on" : "off") + "'></span><b>" + it.name +
+      "</b><span class='u'>" + (it.url ? it.url.replace("http://", "") : "本地流水线") +
+      " · " + it.detail + "</span>";
+    pills.appendChild(d);
+    const dot = $("dot-" + it.id);
+    if (dot) { dot.className = "dot " + (it.up ? "on" : "off"); dot.title = it.up ? it.detail : "未启动"; }
+  }
+}
+setInterval(refreshStatus, 8000);
+
+/* ---------- 通用提交 ---------- */
+async function postForm(url, fd) {
+  const r = await fetch(url, { method: "POST", body: fd });
+  if (!r.ok) {
+    let m = r.status + " " + r.statusText;
+    try { const j = await r.json(); if (j.error) m = j.error; } catch {}
+    throw new Error(m);
+  }
+  return r;
+}
+function showAudio(boxId, blob, name) {
+  const url = URL.createObjectURL(blob);
+  $(boxId).innerHTML =
+    "<audio controls src='" + url + "'></audio>" +
+    "<div class='dl'>下载：<a href='" + url + "' download='" + name + "'>" + name + "</a></div>";
+}
+function busy(btnId, on, label) {
+  const b = $(btnId); b.disabled = on; if (label) b.textContent = label;
+}
+
+/* ---------- 板块 1：so-vits 唱歌换声 ---------- */
+async function loadSvcRoles() {
+  try {
+    const names = await (await fetch("/api/svc/models")).json();
+    for (const id of ["svc-role", "e2e-role"]) {
+      const sel = $(id);
+      sel.innerHTML = names.map(n => "<option>" + n + "</option>").join("");
+    }
+  } catch (e) { msg("svc-msg", "角色列表加载失败（6843 没开？）：" + e.message, "err"); }
+}
+$("svc-go").onclick = async () => {
+  const f = $("svc-file").files[0];
+  if (!f) return msg("svc-msg", "先选一个干声 wav 文件", "err");
+  const fd = new FormData();
+  fd.append("audio", f, f.name);
+  fd.append("model", $("svc-role").value);
+  fd.append("transpose", $("svc-transpose").value || "0");
+  fd.append("auto_f0", $("svc-autof0").checked ? "1" : "0");
+  busy("svc-go", true, "换声中…"); msg("svc-msg", "已提交，等模型推理（几十秒内）…");
+  try {
+    const r = await postForm("/api/svc/change", fd);
+    showAudio("svc-result", await r.blob(), "换声_" + $("svc-role").value + ".wav");
+    msg("svc-msg", "完成 ✓", "ok");
+  } catch (e) { msg("svc-msg", "失败：" + e.message, "err"); }
+  busy("svc-go", false, "开始换声");
+};
+
+/* ---------- 板块 2：GPT-SoVITS 文字转语音 ---------- */
+async function loadTtsRoles() {
+  try {
+    const roles = await (await fetch("/api/tts/roles")).json();
+    $("tts-role").innerHTML = roles.map(r => "<option>" + r.name + "</option>").join("");
+    if (roles.length) {
+      msg("tts-msg", "参考音频台词：" + roles[0].prompt_text);
+    } else {
+      msg("tts-msg", "2-gpt-sovits\\models\\ 下没有角色", "err");
+    }
+  } catch (e) { msg("tts-msg", "角色加载失败：" + e.message, "err"); }
+}
+$("tts-go").onclick = async () => {
+  const text = $("tts-text").value.trim();
+  if (!text) return msg("tts-msg", "先输入要念的文本", "err");
+  busy("tts-go", true, "合成中…"); msg("tts-msg", "首次要切换角色权重 + 加载模型，请稍候…");
+  try {
+    const r = await fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: $("tts-role").value, text }),
+    });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || r.status); }
+    showAudio("tts-result", await r.blob(), "语音_" + $("tts-role").value + ".wav");
+    msg("tts-msg", "完成 ✓", "ok");
+  } catch (e) { msg("tts-msg", "失败：" + e.message, "err"); }
+  busy("tts-go", false, "生成语音");
+};
+
+/* ---------- 板块 3：RVC ---------- */
+async function loadRvcRoles() {
+  try {
+    const names = await (await fetch("/api/rvc/roles")).json();
+    $("rvc-role").innerHTML = names.map(n => "<option>" + n + "</option>").join("");
+  } catch (e) { msg("rvc-msg", "音色列表加载失败：" + e.message, "err"); }
+}
+$("rvc-go").onclick = async () => {
+  const f = $("rvc-file").files[0];
+  if (!f) return msg("rvc-msg", "先选一个干声 wav 文件", "err");
+  const fd = new FormData();
+  fd.append("audio", f, f.name);
+  fd.append("weight", $("rvc-role").value);
+  busy("rvc-go", true, "换声中…"); msg("rvc-msg", "要启动 1-rvc 推理管线并加载模型，约 10~40 秒…");
+  try {
+    const r = await postForm("/api/rvc/convert", fd);
+    showAudio("rvc-result", await r.blob(), "RVC_" + $("rvc-role").value.replace(/\.pth$/, "") + ".wav");
+    msg("rvc-msg", "完成 ✓", "ok");
+  } catch (e) { msg("rvc-msg", "失败：" + e.message, "err"); }
+  busy("rvc-go", false, "RVC 换声");
+};
+
+/* ---------- 板块 4：端到端视频换声 ---------- */
+let e2eTimer = null;
+function pollE2E() {
+  clearInterval(e2eTimer);
+  e2eTimer = setInterval(async () => {
+    const s = await (await fetch("/api/e2e/status")).json();
+    msg("e2e-msg", "状态：" + s.state + " · 已用 " + s.elapsed + "s");
+    const log = $("e2e-log");
+    log.style.display = "block";
+    log.textContent = s.log ? s.log.split("\n").slice(-8).join("\n") : "(等日志…)";
+    if (s.state !== "running") {
+      clearInterval(e2eTimer);
+      busy("e2e-go", false, "开始转换");
+      if (s.state === "done" && s.out) {
+        const url = "/api/e2e/video?role=" + encodeURIComponent(s.role) + "&t=" + Date.now();
+        $("e2e-result").innerHTML =
+          "<video controls src='" + url + "'></video>" +
+          "<div class='dl'>下载：<a href='" + url + "' download>输出_" + s.role + ".mp4</a>" +
+          "（4-e2e\\输出\\输出_" + s.role + ".mp4）</div>";
+        msg("e2e-msg", "完成 ✓ 总耗时 " + s.elapsed + "s", "ok");
+      } else {
+        msg("e2e-msg", "失败，看上面日志尾部（或 0-web\\输出\\e2e_job.log）", "err");
+      }
+    }
+  }, 3000);
+}
+$("e2e-go").onclick = async () => {
+  const fd = new FormData();
+  fd.append("role", $("e2e-role").value);
+  const f = $("e2e-file").files[0];
+  if (f) fd.append("video", f, f.name);
+  busy("e2e-go", true, "转换中…");
+  msg("e2e-msg", "任务已提交（提音轨 → 分离 → 换声 → 混音封装）…");
+  $("e2e-result").innerHTML = "";
+  try {
+    const r = await postForm("/api/e2e/run", fd);
+    if (!(await r.json()).ok) throw new Error("启动失败");
+    pollE2E();
+  } catch (e) { msg("e2e-msg", "失败：" + e.message, "err"); busy("e2e-go", false, "开始转换"); }
+};
+
+/* ---------- 初始化 ---------- */
+refreshStatus();
+loadSvcRoles().then(() => {});
+loadTtsRoles().then(() => {});
+loadRvcRoles().then(() => {});
+</script>
+</body>
+</html>

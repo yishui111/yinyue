@@ -1,0 +1,20 @@
+# so-vits-svc 4.1-Stable 推理最小依赖（Python 3.12 / Windows / RTX 4080）
+# 训练才需要的 fairseq 已按官方 vencoder ONNX 方案绕开（角色模型 speech_encoder=vec768l12-onnx）
+# 完整依赖见官方 requirements.txt；本清单只覆盖换声推理 + 服务
+librosa==0.10.2.post1
+scipy
+numpy<2
+soundfile
+torchcrepe
+faiss-cpu
+scikit-learn
+tqdm
+rich
+loguru
+pyyaml
+praat-parselmouth
+pyworld
+Flask
+Flask_Cors
+onnxruntime-gpu==1.17.1
+gradio
