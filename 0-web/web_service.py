@@ -216,11 +216,18 @@ def tts_synthesize(role_name, text):
     global _tts_loaded
     with TTS_LOCK:
         if _tts_loaded != (r["gpt"], r["sovits"]):
-            # yaml 里 custom 段默认是底模权重，必须先切到角色自己的权重再合成
-            fetch(TTS_URL + "/set_gpt_weights", timeout=300,
-                  data=urllib.parse.urlencode({"weights_path": r["gpt"]}).encode())
-            fetch(TTS_URL + "/set_sovits_weights", timeout=300,
-                  data=urllib.parse.urlencode({"weights_path": r["sovits"]}).encode())
+            # yaml 里 custom 段默认是底模权重，必须先切到角色自己的权重再合成。
+            # 切换失败必须报错：否则会用上一个角色的音色继续合成，用户根本看不出来。
+            # （api_v2 会把设置过的权重写进 tts_infer.yaml，重启后自动加载，
+            #   所以这个已加载缓存和上游实际状态是一致的。）
+            for endpoint, wpath in (("/set_gpt_weights", r["gpt"]),
+                                    ("/set_sovits_weights", r["sovits"])):
+                st_w, wdata, _ = fetch(
+                    TTS_URL + endpoint, timeout=300,
+                    data=urllib.parse.urlencode({"weights_path": wpath}).encode())
+                if st_w != 200:
+                    raise RuntimeError("切换权重失败 %s -> %s: %s"
+                                       % (endpoint, wpath, wdata.decode("utf-8", "replace")[:200]))
             _tts_loaded = (r["gpt"], r["sovits"])
         payload = {
             "text": text, "text_lang": "zh",
@@ -472,9 +479,15 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/e2e/run":
             body = self.read_body()
-            fields, files = parse_multipart(body, self.headers.get("Content-Type", "")) \
-                if "multipart" in self.headers.get("Content-Type", "") \
-                else ({}, {})
+            ctype_hdr = self.headers.get("Content-Type", "")
+            if "multipart" in ctype_hdr:
+                fields, files = parse_multipart(body, ctype_hdr)
+            else:
+                # 也兼容 JSON（只传 role，不传视频）
+                try:
+                    fields, files = json.loads(body.decode("utf-8") or "{}") or {}, {}
+                except ValueError:
+                    fields, files = {}, {}
             role = fields.get("role", "furina")
             # 角色必须是 6843 真实存在的，避免白跑几分钟
             _, mdata, _ = fetch(SVC_URL + "/models", timeout=15)
