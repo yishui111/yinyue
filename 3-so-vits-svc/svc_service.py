@@ -14,6 +14,7 @@ so-vits-svc 唱歌换声服务（在官方 4.1-Stable 之上封装，上游源�
      curl -X POST -F "audio=@test.wav" "http://127.0.0.1:6843/svc/change_voice?model=furina&transpose=0&auto_f0=1" -o out.wav
 """
 import argparse
+import gc
 import io
 import json
 import logging
@@ -66,8 +67,8 @@ def scan_models():
     for cfg in sorted(MODELS_DIR.glob("*.json")):
         stem = cfg.stem
         pth = None
-        for cand in MODELS_DIR.glob(stem + "*.pth"):
-            if cand.name.endswith("_G.pth") or cand.stem.startswith(stem):
+        for cand in sorted(MODELS_DIR.glob(stem + "*.pth")):
+            if not cand.name.endswith("_G.pth"):
                 pth = cand
                 break
         if pth is None:
@@ -96,6 +97,9 @@ def load_model(name):
     # 同显存策略：一次只留一个角色模型
     _loaded.clear()
     _loaded[name] = (model, info)
+    gc.collect()                      # 立刻释放被换下去那个角色的显存
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     return _loaded[name]
 
 
@@ -147,16 +151,24 @@ def change_voice():
         return jsonify({"error": str(e)}), 404
 
     spk_names = list(model.spk2id.keys())
+    if not spk_names:
+        return jsonify({"error": f"模型 {name} 的 config.json 里没有 speaker 配置"}), 400
     speaker = f.get("speaker", spk_names[0])
     if speaker not in model.spk2id and not str(speaker).isdigit():
         return jsonify({"error": f"speaker '{speaker}' not in {spk_names}"}), 400
 
     input_bytes = io.BytesIO(file.read())
-    audio, _audio_len, _n_frames = model.infer(speaker, transpose, input_bytes,
-                            cluster_infer_ratio=cluster_ratio,
-                            auto_predict_f0=auto_f0,
-                            noice_scale=0.4,
-                            f0_predictor=f0_predictor)
+    try:
+        audio, _audio_len, _n_frames = model.infer(
+            speaker, transpose, input_bytes,
+            cluster_infer_ratio=cluster_ratio,
+            auto_predict_f0=auto_f0,
+            noice_scale=0.4,
+            f0_predictor=f0_predictor)
+    except Exception as e:
+        # 返回 JSON 而不是 flask 默认的 HTML 错误页，方便总控页/脚本解析
+        logging.exception("infer failed")
+        return jsonify({"error": "换声推理失败: %s" % e}), 500
     out = io.BytesIO()
     if hasattr(audio, "cpu"):
         audio = audio.cpu().numpy()

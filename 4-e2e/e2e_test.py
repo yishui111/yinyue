@@ -53,8 +53,13 @@ FFMPEG = find_ffmpeg()
 
 
 def run(cmd, **kw):
+    """跑一条外部命令，失败时把 stderr 打出来（ffmpeg 报错藏在 stderr 里）。"""
     print("+", " ".join(str(c) for c in cmd), flush=True)
-    subprocess.run([str(c) for c in cmd], check=True, **kw)
+    p = subprocess.run([str(c) for c in cmd], check=False,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kw)
+    if p.returncode != 0:
+        tail = (p.stderr or p.stdout or b"").decode("utf-8", "replace")[-800:]
+        raise RuntimeError("命令失败（退出码 %d）：\n%s" % (p.returncode, tail))
 
 
 def cuda_ok():
@@ -68,8 +73,9 @@ def cuda_ok():
 def pick_input():
     if len(sys.argv) > 1:
         return Path(sys.argv[1])
-    for p in sorted(TESTDATA.glob("*.mp4")):
-        return p
+    vids = sorted(TESTDATA.glob("*.mp4"))
+    if vids:
+        return vids[0]
     print("[失败] testdata\\ 下没有输入视频")
     sys.exit(1)
 
@@ -105,8 +111,7 @@ def main():
 
     # 1) 提取音轨
     full_mix = WORK / "01_full_mix.wav"
-    run([FFMPEG, "-y", "-i", src, "-vn", "-ac", "1", "-ar", "44100", full_mix],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    run([FFMPEG, "-y", "-i", src, "-vn", "-ac", "1", "-ar", "44100", full_mix])
     audio, sr = sf.read(full_mix, dtype="float32")
     print("[1/5] 音轨: %.2fs @ %dHz" % (len(audio) / sr, sr), flush=True)
 
@@ -156,16 +161,14 @@ def main():
     mixed = WORK / "05_mixed.wav"
     run([FFMPEG, "-y", "-i", converted, "-i", WORK / "03_instrumental.wav",
          "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:normalize=0[m]",
-         "-map", "[m]", "-ar", "44100", mixed],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+         "-map", "[m]", "-ar", "44100", mixed])
 
     # 5) 封装回视频（视频流直接拷贝）
     print("[5/5] 封装回视频...", flush=True)
     out = OUT_DIR / ("输出_%s.mp4" % role)
     run([FFMPEG, "-y", "-i", src, "-i", mixed,
          "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-         "-shortest", out],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+         "-shortest", out])
     print("\n[完成] %s  总耗时 %.1fs" % (out.relative_to(ROOT), time.time() - t_all), flush=True)
 
 

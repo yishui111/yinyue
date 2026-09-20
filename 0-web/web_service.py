@@ -15,11 +15,13 @@ r"""
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -47,9 +49,14 @@ OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def fetch(url, data=None, headers=None, timeout=60):
+    """返回 (status, body, content-type)。上游 4xx/5xx 也正常返回，
+    不抛 HTTPError——这样调用方的 status 判断和错误信息才是真实生效的。"""
     req = urllib.request.Request(url, data=data, headers=headers or {})
-    with OPENER.open(req, timeout=timeout) as r:
-        return r.status, r.read(), r.headers.get("Content-Type", "")
+    try:
+        with OPENER.open(req, timeout=timeout) as r:
+            return r.status, r.read(), r.headers.get("Content-Type", "")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read(), e.headers.get("Content-Type", "")
 
 
 # ---------------------------------------------------------------- multipart
@@ -235,7 +242,6 @@ def rvc_convert(in_wav: Path, weight: str, out_wav: Path):
     py = DIR_RVC / "runtime" / "py312" / "python.exe"
     if not py.is_file():
         raise RuntimeError("没找到 1-rvc 的运行环境")
-    import os
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     p = subprocess.run(
@@ -263,7 +269,6 @@ def e2e_start(role, video_path: Path):
 
 
 def _e2e_worker(role, video_path: Path):
-    import os
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     try:
@@ -286,6 +291,12 @@ def _e2e_worker(role, video_path: Path):
         E2E["out"] = str(out) if out.is_file() else ""
         try:
             E2E["log"] = E2E_LOG.read_text(encoding="utf-8", errors="replace")[-2000:]
+        except Exception:
+            pass
+        # 上传的临时视频用完就删（testdata 里的固定输入不动）
+        try:
+            if video_path.is_relative_to(UPLOAD_DIR):
+                video_path.unlink(missing_ok=True)
         except Exception:
             pass
 
@@ -451,9 +462,13 @@ class Handler(BaseHTTPRequestHandler):
             in_wav.write_bytes(fdata)
             try:
                 rvc_convert(in_wav, weight, out_wav)
+                data = out_wav.read_bytes()
             finally:
+                # 输入输出都是临时文件，发完即删，不在 uploads\ 里堆历史
                 in_wav.unlink(missing_ok=True)
-            return self.send_file(out_wav, download_name="RVC_%s.wav" % Path(weight).stem)
+                out_wav.unlink(missing_ok=True)
+            return self.send_bytes(data, "audio/wav",
+                                   filename="RVC_%s.wav" % Path(weight).stem)
 
         if path == "/api/e2e/run":
             body = self.read_body()

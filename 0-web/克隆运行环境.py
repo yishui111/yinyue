@@ -45,12 +45,12 @@ def main():
         [src_root / "1-rvc" / "runtime" / "py312", src_root / "4-e2e" / "runtime" / "py312"]
     src = next((c for c in candidates if (c / "python.exe").is_file()), None)
     if not src:
-        print("[失败] 没找到可克隆的 runtime\py312（试过：%s）"
+        print(r"[失败] 没找到可克隆的 runtime\py312（试过：%s）"
               % "、".join(str(c) for c in candidates))
         sys.exit(1)
     dst = ROOT / "runtime" / "py312"
     if (dst / "python.exe").is_file():
-        print("[提示] 本项目已有 runtime\py312，不用克隆。")
+        print(r"[提示] 本项目已有 runtime\py312，不用克隆。")
         return
     print("克隆 %s -> %s （硬链接，不占磁盘）" % (src, dst), flush=True)
     t0 = time.time()

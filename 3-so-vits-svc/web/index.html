@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>so-vits-svc 唱歌换声控制台</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel2: #1d212e;
+    --border: #2a2f3f;
+    --text: #e6e9f0;
+    --muted: #8b93a7;
+    --accent: #7c6cf5;
+    --accent2: #4fd1c5;
+    --ok: #34d399;
+    --err: #f87171;
+    --warn: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    min-height: 100vh;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #1a1e2b, #141722);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header h1 { font-size: 18px; font-weight: 600; letter-spacing: .5px; }
+  header h1 span { color: var(--accent); }
+  .svc-state { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.err { background: var(--err); box-shadow: 0 0 8px var(--err); }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px; margin-bottom: 20px;
+  }
+  .card:last-child { margin-bottom: 0; }
+  .card h2 { font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+  .ep {
+    font-family: Consolas, monospace; font-size: 11px; color: var(--accent2);
+    background: rgba(79,209,197,.08); border: 1px solid rgba(79,209,197,.25);
+    padding: 2px 8px; border-radius: 6px; font-weight: 400;
+  }
+  .card .sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .btn {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: var(--accent); color: #fff; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent), #5a8bf5);
+    border: none; font-size: 15px; font-weight: 600; padding: 12px; width: 100%;
+  }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.15); }
+  .btn.mini { font-size: 12px; padding: 4px 10px; }
+
+  /* health */
+  #healthBody { display: grid; gap: 8px; font-size: 13px; }
+  #healthBody .row { display: flex; justify-content: space-between; padding: 6px 10px; background: var(--panel2); border-radius: 6px; }
+  #healthBody .k { color: var(--muted); }
+  #healthBody .v { font-family: Consolas, monospace; }
+  .v.good { color: var(--ok); } .v.bad { color: var(--err); }
+
+  /* models */
+  .model-list { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; }
+  .model-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; transition: all .15s;
+  }
+  .model-item:hover { border-color: var(--accent); }
+  .model-item.active { border-color: var(--accent); background: rgba(124,108,245,.12); }
+  .model-item .name { font-weight: 600; font-size: 14px; }
+  .model-item .meta { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: Consolas, monospace; }
+  .badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .badge.fr { background: rgba(79,209,197,.12); color: var(--accent2); border: 1px solid rgba(79,209,197,.3); }
+  .badge.loaded { background: rgba(52,211,153,.12); color: var(--ok); border: 1px solid rgba(52,211,153,.3); }
+  .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
+
+  /* form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .field label b { color: var(--text); font-weight: 600; }
+  select, input[type=number] {
+    width: 100%; background: var(--panel2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; font-size: 14px;
+    outline: none;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range-val { font-family: Consolas, monospace; font-size: 13px; color: var(--accent2); }
+  .switch { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+  .dropzone {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 26px 16px;
+    text-align: center; cursor: pointer; transition: all .15s; grid-column: 1 / -1;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: rgba(124,108,245,.06); }
+  .dropzone .icon { font-size: 30px; margin-bottom: 6px; }
+  .dropzone p { font-size: 13px; color: var(--muted); }
+  .dropzone .fname { color: var(--accent2); font-family: Consolas, monospace; margin-top: 6px; font-size: 13px; }
+
+  .full { grid-column: 1 / -1; }
+
+  /* result */
+  #resultArea { display: none; margin-top: 18px; border-top: 1px solid var(--border); padding-top: 16px; }
+  #resultArea.show { display: block; }
+  #resultArea audio { width: 100%; margin: 10px 0; }
+  .result-meta { font-size: 12px; color: var(--muted); font-family: Consolas, monospace; }
+
+  .status-line { margin-top: 14px; font-size: 13px; min-height: 20px; }
+  .status-line.ok { color: var(--ok); } .status-line.err { color: var(--err); } .status-line.busy { color: var(--warn); }
+
+  /* api table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; }
+  td code { font-family: Consolas, monospace; color: var(--accent2); font-size: 11px; }
+  td .arrow { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>so-vits-svc <span>唱歌换声控制台</span></h1>
+  <div class="svc-state"><span class="dot" id="hdrDot"></span><span id="hdrText">检测中…</span></div>
+</header>
+
+<main>
+  <!-- 左列 -->
+  <div class="col">
+    <!-- 1. 服务状态 ↔ GET /health -->
+    <div class="card">
+      <h2>服务状态 <span class="ep">GET /health</span>
+        <button class="btn mini" style="margin-left:auto" onclick="refreshHealth()">刷新</button></h2>
+      <div class="sub">对应后端健康检查接口，含显卡信息</div>
+      <div id="healthBody"><div class="empty">加载中…</div></div>
+    </div>
+
+    <!-- 2. 角色模型 ↔ GET /models -->
+    <div class="card">
+      <h2>角色模型 <span class="ep">GET /models</span>
+        <button class="btn mini" style="margin-left:auto" onclick="refreshModels()">刷新</button></h2>
+      <div class="sub">models\ 目录自动扫描，点击角色即选中换声目标</div>
+      <div class="model-list" id="modelList"><div class="empty">加载中…</div></div>
+    </div>
+
+    <!-- 4. 接口对照 -->
+    <div class="card">
+      <h2>接口对照 <span class="ep">页面 ↔ 服务</span></h2>
+      <div class="sub">本页每个功能区只调用它标注的那一个接口</div>
+      <table>
+        <tr><th>页面区域</th><th>对应接口</th></tr>
+        <tr><td>服务状态</td><td><span class="arrow">↔</span> <code>GET /health</code></td></tr>
+        <tr><td>角色模型列表</td><td><span class="arrow">↔</span> <code>GET /models</code></td></tr>
+        <tr><td>换声表单（上传/参数/结果）</td><td><span class="arrow">↔</span> <code>POST /svc/change_voice</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 右列 -->
+  <div class="col">
+    <!-- 3. 换声 ↔ POST /svc/change_voice -->
+    <div class="card">
+      <h2>唱歌换声 <span class="ep">POST /svc/change_voice</span></h2>
+      <div class="sub">上传干声，保留旋律只换音色；参数与服务接口字段一一对应</div>
+
+      <div class="form-grid">
+        <!-- audio -->
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('audioInput').click()">
+          <div class="icon">🎵</div>
+          <p>点击选择或拖拽干声 wav 文件到此处</p>
+          <p class="hint">对应接口字段 <b>audio</b>（form-data，必填）</p>
+          <div class="fname" id="audioName"></div>
+        </div>
+        <input type="file" id="audioInput" accept=".wav,.mp3,.flac,.ogg,.m4a" style="display:none">
+
+        <!-- model -->
+        <div class="field">
+          <label><b>model</b> · 角色模型</label>
+          <select id="modelSel"><option value="">加载中…</option></select>
+          <div class="hint">角色名 = models\ 下 json 文件前缀</div>
+        </div>
+
+        <!-- speaker -->
+        <div class="field">
+          <label><b>speaker</b> · 说话人（可选）</label>
+          <select id="speakerSel"><option value="">默认（模型第一个说话人）</option></select>
+          <div class="hint">来自所选角色 json 的 spk 列表</div>
+        </div>
+
+        <!-- transpose -->
+        <div class="field">
+          <label><b>transpose</b> · 变调（半音）　<span class="range-val" id="transposeVal">0</span></label>
+          <input type="range" id="transpose" min="-24" max="24" step="1" value="0" oninput="transposeVal.textContent=this.value">
+          <div class="hint">男转女常用 -12，女转男常用 +12；整数，默认 0</div>
+        </div>
+
+        <!-- f0_predictor -->
+        <div class="field">
+          <label><b>f0_predictor</b> · 音高提取算法</label>
+          <select id="f0Predictor">
+            <option value="rmvpe" selected>rmvpe（默认，推荐）</option>
+            <option value="crepe">crepe</option>
+            <option value="pm">pm</option>
+          </select>
+          <div class="hint">可选 rmvpe / crepe / pm</div>
+        </div>
+
+        <!-- auto_f0 -->
+        <div class="field">
+          <label><b>auto_f0</b> · 自动预测音高</label>
+          <div class="switch">
+            <input type="checkbox" id="autoF0" checked>
+            <span style="font-size:13px">唱歌推荐开启（勾选=1，取消=0）</span>
+          </div>
+          <div class="hint">开启后自动跟随旋律音高；关闭则严格跟随原曲</div>
+        </div>
+
+        <!-- cluster_ratio -->
+        <div class="field">
+          <label><b>cluster_ratio</b> · 聚类/特征检索比例　<span class="range-val" id="clusterVal">0</span></label>
+          <input type="range" id="clusterRatio" min="0" max="1" step="0.05" value="0" oninput="clusterVal.textContent=(+this.value).toFixed(2)">
+          <div class="hint">0~1，默认 0；越接近 1 音色越像角色本人，咬字越糊</div>
+        </div>
+
+        <div class="full">
+          <button class="btn primary" id="convertBtn" onclick="doConvert()">开始换声</button>
+          <div class="status-line" id="statusLine"></div>
+        </div>
+      </div>
+
+      <!-- result -->
+      <div id="resultArea">
+        <h2 style="font-size:14px">换声结果 <span class="result-meta" id="resultMeta"></span></h2>
+        <audio id="resultAudio" controls></audio>
+        <a id="downloadLink" class="btn" style="display:inline-block;text-decoration:none" download>⬇ 下载 wav</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let audioFile = null;
+let modelsData = {};
+
+/* ---------- GET /health ---------- */
+async function refreshHealth() {
+  const body = $('healthBody'), dot = $('hdrDot'), txt = $('hdrText');
+  try {
+    const r = await fetch('/health', {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    dot.className = 'dot ok'; txt.textContent = '服务运行中';
+    body.innerHTML = `
+      <div class="row"><span class="k">status</span><span class="v good">${d.status}</span></div>
+      <div class="row"><span class="k">cuda</span><span class="v ${d.cuda ? 'good' : 'bad'}">${d.cuda ? '可用' : '不可用（CPU 模式）'}</span></div>
+      <div class="row"><span class="k">gpu</span><span class="v">${d.gpu || '—'}</span></div>`;
+  } catch (e) {
+    dot.className = 'dot err'; txt.textContent = '服务未响应';
+    body.innerHTML = `<div class="empty" style="color:var(--err)">连接失败：${e.message}<br>请确认 6843 端口服务已启动</div>`;
+  }
+}
+
+/* ---------- GET /models ---------- */
+async function refreshModels() {
+  const list = $('modelList'), sel = $('modelSel'), spkSel = $('speakerSel');
+  try {
+    const r = await fetch('/models', {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    modelsData = await r.json();
+    const names = Object.keys(modelsData).sort();
+    if (!names.length) {
+      list.innerHTML = '<div class="empty">models\\ 下未扫描到角色模型<br>（需要 角色.json + 角色*.pth）</div>';
+      sel.innerHTML = '<option value="">无可用角色</option>';
+      return;
+    }
+    const prev = sel.value;
+    sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (names.includes(prev)) sel.value = prev;
+    list.innerHTML = names.map(n => {
+      const m = modelsData[n];
+      return `<div class="model-item" data-name="${n}" onclick="pickModel('${n}')">
+        <div><div class="name">${n}</div>
+        <div class="meta">${m.speakers.length ? 'spk: ' + m.speakers.join(', ') : 'spk: —'}</div></div>
+        <div style="display:flex;gap:5px;align-items:center">
+          ${m.feature_retrieval ? '<span class="badge fr">特征检索</span>' : ''}
+          ${m.loaded ? '<span class="badge loaded">已加载</span>' : ''}
+        </div></div>`;
+    }).join('');
+    onModelChange();
+  } catch (e) {
+    list.innerHTML = `<div class="empty" style="color:var(--err)">获取失败：${e.message}</div>`;
+  }
+}
+
+function pickModel(n) {
+  $('modelSel').value = n;
+  onModelChange();
+}
+function onModelChange() {
+  const n = $('modelSel').value;
+  document.querySelectorAll('.model-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.name === n));
+  const spks = (modelsData[n] && modelsData[n].speakers) || [];
+  $('speakerSel').innerHTML = '<option value="">默认（模型第一个说话人）</option>' +
+    spks.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+/* ---------- audio upload ---------- */
+const dz = $('dropzone');
+$('audioInput').addEventListener('change', e => setAudio(e.target.files[0]));
+['dragover', 'dragenter'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e => setAudio(e.dataTransfer.files[0]));
+
+function setAudio(f) {
+  if (!f) return;
+  audioFile = f;
+  $('audioName').textContent = `${f.name}（${(f.size / 1048576).toFixed(2)} MB）`;
+}
+
+/* ---------- POST /svc/change_voice ---------- */
+function setStatus(msg, cls) {
+  const el = $('statusLine');
+  el.textContent = msg; el.className = 'status-line ' + (cls || '');
+}
+
+async function doConvert() {
+  const btn = $('convertBtn');
+  if (!audioFile) { setStatus('请先选择干声音频文件', 'err'); return; }
+  const model = $('modelSel').value;
+  if (!model) { setStatus('没有可用角色模型', 'err'); return; }
+
+  const fd = new FormData();
+  fd.append('audio', audioFile, audioFile.name);
+  fd.append('model', model);
+  fd.append('transpose', $('transpose').value);
+  fd.append('auto_f0', $('autoF0').checked ? '1' : '0');
+  fd.append('cluster_ratio', $('clusterRatio').value);
+  fd.append('f0_predictor', $('f0Predictor').value);
+  const spk = $('speakerSel').value;
+  if (spk) fd.append('speaker', spk);
+
+  btn.disabled = true;
+  $('resultArea').classList.remove('show');
+  const t0 = Date.now();
+  const timer = setInterval(() =>
+    setStatus(`换声中… ${((Date.now() - t0) / 1000).toFixed(0)}s（首次加载模型会较久）`, 'busy'), 500);
+  setStatus('换声中… 0s（首次加载模型会较久）', 'busy');
+
+  try {
+    const r = await fetch('/svc/change_voice', {method: 'POST', body: fd});
+    clearInterval(timer);
+    if (!r.ok) {
+      let msg = 'HTTP ' + r.status;
+      try { msg = (await r.json()).error || msg; } catch (_) {}
+      setStatus('换声失败：' + msg, 'err');
+      return;
+    }
+    const blob = await r.blob();
+    const secs = ((Date.now() - t0) / 1000).toFixed(1);
+    let fname = `${model}_converted.wav`;
+    const cd = r.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename="?([^";]+)"?/);
+    if (m) fname = decodeURIComponent(m[1]);
+    const url = URL.createObjectURL(blob);
+    $('resultAudio').src = url;
+    const dl = $('downloadLink');
+    dl.href = url; dl.download = fname;
+    dl.textContent = '⬇ 下载 ' + fname;
+    $('resultMeta').textContent = `耗时 ${secs}s · ${(blob.size / 1048576).toFixed(2)} MB`;
+    $('resultArea').classList.add('show');
+    setStatus(`换声完成，耗时 ${secs} 秒`, 'ok');
+    refreshModels(); // loaded 徽标可能变化
+  } catch (e) {
+    clearInterval(timer);
+    setStatus('换声失败：' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- init ---------- */
+refreshHealth();
+refreshModels();
+</script>
+</body>
+</html>

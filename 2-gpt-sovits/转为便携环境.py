@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-°Ñ±¾ÏîÄ¿µÄ Python »·¾³±ä³É¡¸×Ô´ø½âÊÍÆ÷¡¹µÄÃâ°²×°ĞÎÌ¬£ºruntime\py312
+æŠŠæœ¬é¡¹ç›®çš„ Python ç¯å¢ƒå˜æˆã€Œè‡ªå¸¦è§£é‡Šå™¨ã€çš„å…å®‰è£…å½¢æ€ï¼šruntime\py312
 
-Ô­Àí£ºvenv ÀïÖ»ÓĞµÚÈı·½°ü£¬½âÊÍÆ÷±¾Ìå¿¿ pyvenv.cfg Ö¸ÏòÏµÍ³ Python£¨»»Ì¨µçÄÔ¾Í·Ï£©¡£
-      ÕâÀï°ÑÏµÍ³ Python µÄ python.exe / DLLs / ±ê×¼¿â / include ²¢½øÀ´£¬É¾µô pyvenv.cfg£¬
-      Ö®ºóÕû¸ö runtime\py312 ¿½µ½ÄÄ¶¼ÄÜÖ±½ÓÅÜ¡£
+åŸç†ï¼švenv é‡Œåªæœ‰ç¬¬ä¸‰æ–¹åŒ…ï¼Œè§£é‡Šå™¨æœ¬ä½“é  pyvenv.cfg æŒ‡å‘ç³»ç»Ÿ Pythonï¼ˆæ¢å°ç”µè„‘å°±åºŸï¼‰ã€‚
+      è¿™é‡ŒæŠŠç³»ç»Ÿ Python çš„ python.exe / DLLs / æ ‡å‡†åº“ / include å¹¶è¿›æ¥ï¼Œåˆ æ‰ pyvenv.cfgï¼Œ
+      ä¹‹åæ•´ä¸ª runtime\py312 æ‹·åˆ°å“ªéƒ½èƒ½ç›´æ¥è·‘ã€‚
 
-ÓÃ·¨£ºÔÚ±¾ÏîÄ¿Ä¿Â¼ÏÂÖ´ĞĞ  python ×ªÎª±ãĞ¯»·¾³.py
+ç”¨æ³•ï¼šåœ¨æœ¬é¡¹ç›®ç›®å½•ä¸‹æ‰§è¡Œ  python è½¬ä¸ºä¾¿æºç¯å¢ƒ.py
 """
 import os
 import shutil
@@ -20,7 +20,7 @@ TOP_DIRS = ["DLLs", "libs", "tcl"]
 
 
 def find_base():
-    """ÕÒµ½ÏµÍ³ÀïµÄ Python 3.12 °²×°Ä¿Â¼"""
+    """æ‰¾åˆ°ç³»ç»Ÿé‡Œçš„ Python 3.12 å®‰è£…ç›®å½•"""
     import subprocess
     for cmd in (["py", "-3.12", "-c", "import sys;print(sys.executable)"],
                 [sys.executable, "-c", "import sys;print(sys._base_executable or sys.executable)"]):
@@ -55,27 +55,27 @@ def merge(src, dst, skip=None):
                 shutil.copy2(e.path, target)
                 added += 1
         except OSError as ex:
-            print("  [Ìø¹ı] %s (%s)" % (e.path, ex))
+            print("  [è·³è¿‡] %s (%s)" % (e.path, ex))
     return added
 
 
 def main():
-    # Ä¿±êÄ¿Â¼£ºÓÅÏÈ runtime\py312£¬Æä´Î venv
+    # ç›®æ ‡ç›®å½•ï¼šä¼˜å…ˆ runtime\py312ï¼Œå…¶æ¬¡ venv
     target = ROOT / "runtime" / "py312"
     if not target.is_dir():
         venv = ROOT / "venv"
         if venv.is_dir():
             target = venv
         else:
-            print("[Ê§°Ü] ¼ÈÃ»ÓĞ runtime\py312 Ò²Ã»ÓĞ venv£¬ÇëÏÈÔËĞĞ °²×°»·¾³.bat")
+            print("[å¤±è´¥] æ—¢æ²¡æœ‰ runtime\py312 ä¹Ÿæ²¡æœ‰ venvï¼Œè¯·å…ˆè¿è¡Œ å®‰è£…ç¯å¢ƒ.bat")
             return 1
 
     base = find_base()
     if base is None:
-        print("[Ê§°Ü] ÕÒ²»µ½ÏµÍ³ Python 3.12£¬ÎŞ·¨È¡½âÊÍÆ÷±¾Ìå")
+        print("[å¤±è´¥] æ‰¾ä¸åˆ°ç³»ç»Ÿ Python 3.12ï¼Œæ— æ³•å–è§£é‡Šå™¨æœ¬ä½“")
         return 1
-    print("ÏµÍ³ Python: %s" % base)
-    print("Ä¿±ê»·¾³:   %s" % target)
+    print("ç³»ç»Ÿ Python: %s" % base)
+    print("ç›®æ ‡ç¯å¢ƒ:   %s" % target)
 
     for f in TOP_FILES:
         src, dst = base / f, target / f
@@ -89,14 +89,14 @@ def main():
             print("  + %s/" % d)
 
     n = merge(base / "include", target / "Include")
-    print("  + include -> Include (%d ¸öÎÄ¼ş)" % n)
+    print("  + include -> Include (%d ä¸ªæ–‡ä»¶)" % n)
     n = merge(base / "Lib", target / "Lib", skip={"site-packages"})
-    print("  + Lib ±ê×¼¿â (%d ¸öÎÄ¼ş)" % n)
+    print("  + Lib æ ‡å‡†åº“ (%d ä¸ªæ–‡ä»¶)" % n)
 
     cfg = target / "pyvenv.cfg"
     if cfg.exists():
         cfg.unlink()
-        print("  - pyvenv.cfg£¨²»ÔÙÒÀÀµÏµÍ³ Python Â·¾¶£©")
+        print("  - pyvenv.cfgï¼ˆä¸å†ä¾èµ–ç³»ç»Ÿ Python è·¯å¾„ï¼‰")
     for f in ("python.exe", "pythonw.exe"):
         p = target / "Scripts" / f
         if p.exists():
@@ -108,12 +108,12 @@ def main():
     if target != final:
         final.parent.mkdir(parents=True, exist_ok=True)
         if final.exists():
-            print("  ! %s ÒÑ´æÔÚ£¬±£ÁôÔ­Ñù" % final.name)
+            print("  ! %s å·²å­˜åœ¨ï¼Œä¿ç•™åŸæ ·" % final.name)
         else:
             target.rename(final)
             print("  > venv -> runtime\py312")
 
-    print("[Íê³É] ÏÖÔÚ runtime\py312 ¿ÉÒÔÕû¸ö¿½µ½±ğµÄµçÄÔÉÏÖ±½ÓÓÃ¡£")
+    print("[å®Œæˆ] ç°åœ¨ runtime\py312 å¯ä»¥æ•´ä¸ªæ‹·åˆ°åˆ«çš„ç”µè„‘ä¸Šç›´æ¥ç”¨ã€‚")
     return 0
 
 

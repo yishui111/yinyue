@@ -37,6 +37,7 @@
 !/3-so-vits-svc/svc_service.py
 !/3-so-vits-svc/requirements-infer.txt
 !/3-so-vits-svc/tests/
+!/3-so-vits-svc/web/
 
 # ---- 我自己的项目，整个入库（排除环境/产物）----
 /0-web/runtime/
