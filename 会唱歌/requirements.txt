@@ -1,0 +1,6 @@
+click
+librosa
+PyYAML
+tqdm
+pypinyin
+lightning

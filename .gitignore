@@ -46,6 +46,13 @@
 /4-e2e/models/
 /4-e2e/输出/
 
+# ---- 会唱歌（DiffSinger 引擎本体/模型/runtime/产物不入库）----
+/会唱歌/diffsinger/
+/会唱歌/downloads/
+/会唱歌/checkpoints/
+/会唱歌/输出/
+/会唱歌/克隆日志.txt
+
 # ---- 需求原稿不入库 ----
 部署文档.txt
 

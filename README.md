@@ -10,6 +10,8 @@
 | `2-gpt-sovits/` | GPT-SoVITS 文字转二次元语音（旁白/台词，零样本克隆） | [RVC-Boss/GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)（固定 `d523079`） | 9880 (API) |
 | `3-so-vits-svc/` | so-vits-svc 4.1-Stable，**核心引擎**：歌曲原声 → 角色音色，保留旋律 | [svc-develop-team/so-vits-svc](https://github.com/svc-develop-team/so-vits-svc)（4.1-Stable 分支） | 6843 |
 | `4-e2e/` | **端到端**（我写的）：音乐视频 → 提音轨 → 人声伴奏分离 → 换二次元音色 → 混音 → 封装回视频 | 调 6843 | — |
+| `获取旋律/` | **旋律工作台**：歌曲 → 分离人声 → 提旋律/提歌词 → song.json → DeepSeek 依曲填词 | Demucs + librosa.pyin + faster-whisper + DeepSeek | 8765 |
+| `会唱歌/` | **唱出来**（我写的）：song.json + 填好的新词 → DiffSinger 直接唱出人声 → 可选再过 6843 换角色音色 | [openvpi/DiffSinger](https://github.com/openvpi/DiffSinger)（v2.5.1 + 官方 0211 中文声学模型） | 8102 |
 
 **这个仓库只提交我自己写的部分**：总控页（`0-web/`）、自研换声服务
 `3-so-vits-svc/svc_service.py`、端到端流水线（`4-e2e/`）、各引擎的
@@ -41,6 +43,8 @@ Python 环境、模型权重、ffmpeg 都不进仓库，换电脑时按本文档
 | so-vits 唱歌换声 | `3-so-vits-svc\启动.bat` | http://127.0.0.1:6843 |
 | GPT-SoVITS 文字转语音 | `2-gpt-sovits\启动.bat` | http://127.0.0.1:9880 |
 | RVC 换声 WebUI | `1-rvc\启动.bat` | http://127.0.0.1:7865 |
+| 旋律工作台 | `获取旋律\start.bat` | http://127.0.0.1:8765 |
+| 会唱歌（DiffSinger） | `会唱歌\启动.bat` | http://127.0.0.1:8102 |
 | 视频换声端到端 | `4-e2e\运行测试.bat` | 依赖 6843 先跑起来 |
 
 接口速查：
@@ -52,6 +56,10 @@ curl -X POST -F "audio=@input.wav" ^
 
 # GPT-SoVITS 文字转语音（零样本，带参考音频）
 curl "http://127.0.0.1:9880/tts?text=晚上好&text_lang=zh&ref_audio_path=models/ayaka/ref.wav&prompt_text=晚上好…&prompt_lang=zh" -o tts.wav
+
+# 会唱歌：song.json（获取旋律 工作台导出）+ DeepSeek 填好的新词 → 唱出人声
+# 命令行：runtime\py312\python.exe sing.py song.json 填词.json [--role furina]
+curl -X POST --data @req.json http://127.0.0.1:8102/sing -o 唱歌.wav
 ```
 
 ## 二、仓库里有什么（我写的部分）

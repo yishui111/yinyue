@@ -1,0 +1,32 @@
+{
+  "title": "小星星",
+  "bpm": 100,
+  "lines": [
+    {
+      "line_id": 0,
+      "original_text": "一闪一闪亮晶晶",
+      "notes": [
+        { "i": 0, "char": "一", "midi": 60, "start": 0.0,  "duration": 0.6 },
+        { "i": 1, "char": "闪", "midi": 60, "start": 0.6,  "duration": 0.6 },
+        { "i": 2, "char": "一", "midi": 67, "start": 1.2,  "duration": 0.6 },
+        { "i": 3, "char": "闪", "midi": 67, "start": 1.8,  "duration": 0.6 },
+        { "i": 4, "char": "亮", "midi": 69, "start": 2.4,  "duration": 0.6 },
+        { "i": 5, "char": "晶", "midi": 69, "start": 3.0,  "duration": 0.6 },
+        { "i": 6, "char": "晶", "midi": 67, "start": 3.6,  "duration": 1.2 }
+      ]
+    },
+    {
+      "line_id": 1,
+      "original_text": "满天都是小星星",
+      "notes": [
+        { "i": 0, "char": "满", "midi": 65, "start": 6.0,  "duration": 0.6 },
+        { "i": 1, "char": "天", "midi": 65, "start": 6.6,  "duration": 0.6 },
+        { "i": 2, "char": "都", "midi": 64, "start": 7.2,  "duration": 0.6 },
+        { "i": 3, "char": "是", "midi": 64, "start": 7.8,  "duration": 0.6 },
+        { "i": 4, "char": "小", "midi": 62, "start": 8.4,  "duration": 0.6 },
+        { "i": 5, "char": "星", "midi": 62, "start": 9.0,  "duration": 0.6 },
+        { "i": 6, "char": "星", "midi": 60, "start": 9.6,  "duration": 1.2 }
+      ]
+    }
+  ]
+}
