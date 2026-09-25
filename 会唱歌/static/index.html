@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>会唱歌 · 旋律+歌词 → 唱出人声</title>
+<style>
+  :root {
+    --bg: #0f1220; --card: #181c2f; --card2: #1f2440; --line: #2b3154;
+    --tx: #e8eaf6; --dim: #9aa1c0; --ok: #3ddc84; --bad: #ff5d73; --warn: #ffc24b;
+    --acc: #7c8cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: var(--bg); color: var(--tx);
+         font: 15px/1.6 "Microsoft YaHei", "PingFang SC", sans-serif; }
+  header, main { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--dim); font-size: 13px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 18px; }
+  .pill { display: flex; align-items: center; gap: 8px; background: var(--card);
+          border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font-size: 13px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .dot.off { background: var(--bad); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          padding: 18px 20px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card h2 { margin: 0; font-size: 17px; }
+  .meta { color: var(--dim); font-size: 12.5px; }
+  label { font-size: 13px; color: var(--dim); display: block; margin: 0 0 4px; }
+  textarea, select, input[type=text], input[type=number] {
+    width: 100%; background: var(--card2); color: var(--tx); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px 10px; font: inherit; }
+  textarea { resize: vertical; min-height: 130px; font-family: Consolas, monospace; font-size: 13px; }
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  button { background: var(--acc); color: #fff; border: 0; border-radius: 8px;
+           padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--tx); font-weight: 400; }
+  button.big { font-size: 17px; padding: 12px 26px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: middle; }
+  th { color: var(--dim); font-weight: 500; font-size: 12.5px; }
+  td input { background: var(--card2); color: var(--tx); border: 1px solid var(--line);
+             border-radius: 6px; padding: 6px 8px; font: inherit; width: 100%; }
+  .cnt { font-size: 12px; border-radius: 999px; padding: 1px 9px; white-space: nowrap; }
+  .cnt.ok { background: rgba(61,220,132,.15); color: var(--ok); }
+  .cnt.bad { background: rgba(255,93,115,.15); color: var(--bad); }
+  .notes { color: var(--dim); font-size: 12px; max-width: 300px; }
+  .msg { border-radius: 8px; padding: 10px 14px; font-size: 13.5px; display: none; white-space: pre-wrap; }
+  .msg.err { background: rgba(255,93,115,.12); color: var(--bad); display: block; }
+  .msg.warn { background: rgba(255,194,75,.12); color: var(--warn); display: block; }
+  .msg.ok { background: rgba(61,220,132,.12); color: var(--ok); display: block; }
+  audio { width: 100%; margin-top: 6px; }
+  a.dl { color: var(--acc); }
+  .hint { color: var(--dim); font-size: 12.5px; }
+  .spin { display: inline-block; animation: r 1s linear infinite; }
+  @keyframes r { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎤 会唱歌 · 旋律 + 歌词 → 唱出人声</h1>
+  <div class="sub">song.json（获取旋律 工作台导出）+ DeepSeek 填好的新词 → DiffSinger 本地合成 → 可选 so-vits 换二次元音色</div>
+  <div class="pills">
+    <div class="pill"><span class="dot" id="dotModel"></span><b>DiffSinger 模型</b><span class="u" id="stModel">检测中…</span></div>
+    <div class="pill"><span class="dot" id="dotSvc"></span><b>so-vits 换声(6843)</b><span class="u" id="stSvc">检测中…</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>① 旋律 song.json</h2>
+    <div class="row">
+      <div style="flex:2.2"><label>粘贴 song.json（或点右边的按钮）</label>
+        <textarea id="songJson" placeholder='{"title": "..., "lines": [{"line_id":0, "notes":[{"i":0,"char":"你","midi":60,"start":0,"duration":0.5}]}]}'></textarea>
+      </div>
+      <div style="flex:.8; display:flex; flex-direction:column; gap:8px;">
+        <button class="ghost" id="btnDemo">载入示例（小星星）</button>
+        <label class="ghost" style="border:1px solid var(--line); border-radius:8px; padding:9px 14px; text-align:center; cursor:pointer; color:var(--tx); font-size:14px;">
+          上传 .json 文件<input type="file" id="songFile" accept=".json" style="display:none">
+        </label>
+        <button class="ghost" id="btnParse">解析旋律 →</button>
+      </div>
+    </div>
+    <div class="msg" id="msgSong"></div>
+    <div class="meta" id="songInfo" style="display:none"></div>
+  </div>
+
+  <div class="card" id="cardLyrics" style="display:none">
+    <h2>② 逐句填词（字数必须和音符数一致）</h2>
+    <div class="row">
+      <div class="hint" style="flex:none">每行一个框，填 DeepSeek 给的新词；红 = 字数不对，改对了才能合成。</div>
+      <div style="flex:none; display:flex; gap:8px">
+        <button class="ghost" id="btnPasteLyrics">整段粘贴新词</button>
+        <button class="ghost" id="btnOrig">用原词</button>
+      </div>
+    </div>
+    <div id="lyricsBox"></div>
+    <div class="msg" id="msgLyrics"></div>
+  </div>
+
+  <div class="card" id="cardSing" style="display:none">
+    <h2>③ 合成设置</h2>
+    <div class="row">
+      <div><label>换声角色（6843，可不选）</label><select id="role"><option value="">不换声（DiffSinger 原始女声）</option></select></div>
+      <div style="max-width:130px"><label>升降调（半音）</label><input type="number" id="key" value="0" min="-12" max="12" step="1"></div>
+      <div style="max-width:130px"><label>音色男女 -1~1</label><input type="number" id="gender" value="0" min="-1" max="1" step="0.05"></div>
+      <div style="max-width:130px"><label>随机种子</label><input type="number" id="seed" value="-1"></div>
+    </div>
+    <div class="row">
+      <button class="big" id="btnSing">🎤 唱出来</button>
+      <div class="hint" style="flex:1">首次合成要加载模型（几十秒）；长歌按分钟计。产出同时可在 输出\ 目录找到。</div>
+    </div>
+    <div class="msg" id="msgSing"></div>
+    <div id="playerBox" style="display:none">
+      <audio id="player" controls></audio>
+      <div style="margin-top:6px"><a class="dl" id="dlLink" download>⬇ 下载这条 wav</a></div>
+    </div>
+  </div>
+
+  <div class="hint">模型：openvpi 0211_opencpop_ds1000_keyshift（非商业用途）· 服务接口说明见 说明.md ·
+    命令行：runtime\py312\python.exe sing.py song.json 填词.json</div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let SONG = null;
+
+function msg(id, text, cls) { const el = $(id); el.className = 'msg ' + (cls || ''); el.textContent = text || ''; }
+
+async function checkHealth() {
+  try {
+    const r = await fetch('/health'); const h = await r.json();
+    $('dotModel').className = 'dot ' + (h.model_ready ? 'on' : 'off');
+    $('stModel').textContent = h.model_ready ? h.model : '缺模型或 runtime，先跑 安装环境.bat';
+    const roles = h.svc_roles || [];
+    $('dotSvc').className = 'dot ' + (roles.length ? 'on' : 'off');
+    $('stSvc').textContent = roles.length ? roles.length + ' 个角色' : '未启动（不影响直接合成）';
+    const sel = $('role');
+    roles.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+  } catch (e) {
+    $('dotModel').className = 'dot off'; $('stModel').textContent = '服务未响应';
+    $('dotSvc').className = 'dot off'; $('stSvc').textContent = '未响应';
+  }
+}
+
+function parseSong(text) {
+  const song = JSON.parse(text);
+  if (!song || !Array.isArray(song.lines) || !song.lines.length) throw new Error('song.json 里没有 lines');
+  for (const ln of song.lines) {
+    if (!Array.isArray(ln.notes) || !ln.notes.length) throw new Error('行 ' + ln.line_id + ' 没有 notes');
+  }
+  return song;
+}
+
+function noteName(m) { return ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][m % 12] + (Math.floor(m / 12) - 1); }
+
+function showSong(song) {
+  SONG = song;
+  const total = song.lines.reduce((s, l) => s + l.notes.length, 0);
+  $('songInfo').style.display = '';
+  $('songInfo').textContent = '《' + (song.title || '未命名') + '》  BPM ' + (song.bpm || '?') +
+    '  ·  ' + song.lines.length + ' 行 / ' + total + ' 个音符';
+  const box = $('lyricsBox'); box.innerHTML = '';
+  const tb = document.createElement('table');
+  tb.innerHTML = '<tr><th style="width:52px">行</th><th style="width:70px">字数</th><th>本行歌词（默认原词，改成 DeepSeek 的新词）</th><th style="width:290px">音符</th></tr>';
+  song.lines.forEach(ln => {
+    const tr = document.createElement('tr');
+    const orig = ln.notes.map(n => n.char || '').join('');
+    tr.innerHTML =
+      '<td>' + ln.line_id + '</td>' +
+      '<td><span class="cnt ok" id="cnt_' + ln.line_id + '">' + ln.notes.length + '/' + ln.notes.length + '</span></td>' +
+      '<td><input id="lyr_' + ln.line_id + '" value="' + orig.replace(/"/g, '&quot;') + '"></td>' +
+      '<td class="notes">' + ln.notes.map(n => (n.midi == null ? '休' : noteName(n.midi)) + '(' + (+n.duration).toFixed(2) + ')').join(' ') + '</td>';
+    tb.appendChild(tr);
+  });
+  box.appendChild(tb);
+  song.lines.forEach(ln => {
+    $('lyr_' + ln.line_id).addEventListener('input', () => validateLine(ln));
+    validateLine(ln);
+  });
+  $('cardLyrics').style.display = ''; $('cardSing').style.display = '';
+  msg('msgSong', '旋律已载入：' + song.lines.length + ' 行 ' + total + ' 个音符，请在下面逐行填词', 'ok');
+}
+
+function validateLine(ln) {
+  const v = $('lyr_' + ln.line_id).value.trim();
+  const n = v.replace(/[，。！？、：；…—,.!?;:\s"'`()（）【】\[\]《》<>·~-]/g, '').length;
+  const el = $('cnt_' + ln.line_id);
+  el.textContent = n + '/' + ln.notes.length;
+  el.className = 'cnt ' + (n === ln.notes.length ? 'ok' : 'bad');
+}
+
+$('btnParse').onclick = () => {
+  try { showSong(parseSong($('songJson').value)); }
+  catch (e) { msg('msgSong', 'song.json 解析失败：' + e.message, 'err'); }
+};
+$('songFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { $('songJson').value = t; $('btnParse').click(); });
+};
+$('btnDemo').onclick = async () => {
+  const r = await fetch('/api/demo'); const d = await r.json();
+  $('songJson').value = JSON.stringify(d.song, null, 2);
+  showSong(d.song);
+  if (d.lyrics) d.song.lines.forEach(ln => {
+    const l = (d.lyrics.lines || []).find(x => x.line_id === ln.line_id);
+    if (l && l.chars) { $('lyr_' + ln.line_id).value = l.new_text || l.chars.join(''); validateLine(ln); }
+  });
+};
+$('btnOrig').onclick = () => {
+  if (!SONG) return;
+  SONG.lines.forEach(ln => { $('lyr_' + ln.line_id).value = ln.notes.map(n => n.char || '').join(''); validateLine(ln); });
+};
+$('btnPasteLyrics').onclick = () => {
+  if (!SONG) return msg('msgLyrics', '先解析旋律', 'err');
+  const t = prompt('把 DeepSeek 的填词整段粘贴进来（每行一句，顺序与旋律行一致，或用「第N句：」开头）：');
+  if (!t) return;
+  const lines = t.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(s => s.replace(/^第\s*\d+\s*句\s*[:：]?\s*/, ''));
+  if (lines.length !== SONG.lines.length) { msg('msgLyrics', '粘贴了 ' + lines.length + ' 行，但旋律有 ' + SONG.lines.length + ' 行，行数不一致', 'err'); return; }
+  SONG.lines.forEach((ln, i) => { $('lyr_' + ln.line_id).value = lines[i]; validateLine(ln); });
+  msg('msgLyrics', '', '');
+};
+
+$('btnSing').onclick = async () => {
+  if (!SONG) return msg('msgSing', '先载入并解析旋律', 'err');
+  const lyrics = { lines: SONG.lines.map(ln => ({ line_id: ln.line_id, text: $('lyr_' + ln.line_id).value.trim() })) };
+  const body = {
+    song: SONG, lyrics,
+    role: $('role').value || '',
+    key: +$('key').value || 0,
+    gender: parseFloat($('gender').value) || 0,
+    seed: +$('seed').value || -1,
+  };
+  const btn = $('btnSing'); btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⏳</span> 合成中…（首次要加载模型）';
+  msg('msgSing', '');
+  $('playerBox').style.display = 'none';
+  const t0 = performance.now();
+  try {
+    const r = await fetch('/sing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) {
+      let e; try { e = await r.json(); } catch (_) { e = { error: 'HTTP ' + r.status }; }
+      msg('msgSing', '失败：' + (e.error || JSON.stringify(e)) + (e.warnings && e.warnings.length ? '\n' + e.warnings.join('\n') : ''), 'err');
+      return;
+    }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    $('player').src = url;
+    const name = ((SONG.title || 'song') + '_唱歌.wav');
+    $('dlLink').href = url; $('dlLink').download = name; $('dlLink').textContent = '⬇ 下载 ' + name;
+    $('playerBox').style.display = '';
+    msg('msgSing', '完成！用时 ' + ((performance.now() - t0) / 1000).toFixed(1) + ' 秒，共 ' + (blob.size / 1024).toFixed(0) + ' KB', 'ok');
+    const w = r.headers.get('X-Sing-Warnings');
+    if (w) msg('msgSing', msg('msgSing').textContent + '\n⚠ ' + decodeURIComponent(w).split('|').join('\n⚠ '), 'warn');
+  } catch (e) {
+    msg('msgSing', '请求失败：' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '🎤 唱出来';
+  }
+};
+
+checkHealth();
+</script>
+</body>
+</html>

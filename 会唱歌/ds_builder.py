@@ -38,6 +38,13 @@ ONSET_RATIO = 0.28
 _pinyin_cache = {}
 _dict_cache = None
 
+# 与工作台页面计数规则一致：这些标点/空白不算字
+STRIP_RE = re.compile(r'[，。！？、：；…—,.!?;:\s"\'`()（）【】\[\]《》<>·~－-]')
+
+
+def text_to_chars(text):
+    return [c for c in (text or "") if not STRIP_RE.match(c)]
+
 
 def load_dict():
     global _dict_cache
@@ -206,7 +213,12 @@ def build_ds(song, lyrics=None, warnings=None):
     lyric_map = {}
     if lyrics:
         for l in lyrics.get("lines", []):
-            lyric_map[l.get("line_id")] = l.get("chars")
+            if isinstance(l.get("chars"), list):
+                lyric_map[l.get("line_id")] = l.get("chars")
+            else:
+                # 页面/DeepSeek 给的整行文本（text 或 new_text）：去标点后逐字对位
+                text = l.get("text") or l.get("new_text") or ""
+                lyric_map[l.get("line_id")] = text_to_chars(text)
     segments = []
     for line in lines:
         lid = line.get("line_id")

@@ -3,10 +3,14 @@ r"""
 会唱歌 HTTP 服务（8102）：给「获取旋律」工作台页（或其他调用方）一个唱歌接口。
 
 接口：
-  GET  /health          → {"status":"ok","model":...,"svc_roles":[...]}
+  GET  /                → 工作台页面（static\index.html）
+  GET  /static/<文件>    → 页面静态资源
+  GET  /health          → {"status":"ok","model":...,"model_ready":...,"svc_roles":[...]}
+  GET  /api/demo        → {"song": 小星星 song.json, "lyrics": 示例填词}
   POST /sing            → 请求体 JSON：
         {"song": {...song.json 原样...},
-         "lyrics": {...DeepSeek 填词 JSON，可省略（省略则唱 song 里的原字）...},
+         "lyrics": {"lines":[{"line_id":0,"text":"弯弯月亮像小船"}]},   ← text 或 chars 均可；
+                    整项省略则唱 song 里的原字
          "role": "furina",      ← 可选，6843 的角色，填了就再换二次元音色
          "key": 0, "gender": 0, "seed": -1}
         返回 audio/wav（同步推理，长歌要等几十秒；错误返回 JSON）
@@ -28,7 +32,14 @@ from pathlib import Path
 
 import sing
 
+ROOT = Path(__file__).resolve().parent
+STATIC_DIR = ROOT / "static"
+TESTDATA = ROOT / "testdata"
 RENDER_LOCK = threading.Lock()
+
+CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+                 ".css": "text/css; charset=utf-8", ".png": "image/png", ".svg": "image/svg+xml",
+                 ".ico": "image/x-icon", ".wav": "audio/wav", ".json": "application/json; charset=utf-8"}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -45,8 +56,31 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_file(self, path: Path, download_name=""):
+        if not path.is_file():
+            return self.send_json({"error": "文件不存在: %s" % path.name}, 404)
+        data = path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type",
+                         CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream"))
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
+        if path in ("/", "/index.html"):
+            return self.send_file(STATIC_DIR / "index.html")
+        if path.startswith("/static/"):
+            name = path[len("/static/"):]
+            if "/" in name or ".." in name:
+                return self.send_json({"error": "bad path"}, 400)
+            return self.send_file(STATIC_DIR / name)
+        if path == "/api/demo":
+            return self.send_json({
+                "song": json.loads((TESTDATA / "小星星.json").read_text(encoding="utf-8-sig")),
+                "lyrics": json.loads((TESTDATA / "填词示例.json").read_text(encoding="utf-8-sig")),
+            })
         if path == "/health":
             roles = []
             try:
