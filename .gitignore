@@ -61,3 +61,4 @@ runtime/
 .workbuddy-ai/
 __pycache__/
 *.log
+/会唱歌/测试/分步结果.json

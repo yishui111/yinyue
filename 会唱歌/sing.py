@@ -54,7 +54,7 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
         raise RuntimeError("缺模型 checkpoints\\%s，先跑 安装环境.bat 或看 说明.md" % EXP_NAME)
     out_dir = out_wav.parent
     title = out_wav.stem
-    cmd = [str(RUNTIME_PY), "scripts/infer.py", "acoustic", str(ds_path),
+    cmd = [str(RUNTIME_PY), "-u", "scripts/infer.py", "acoustic", str(ds_path),
            "--exp", EXP_NAME, "--out", str(out_dir), "--title", title,
            "--key", str(key)]
     if gender is not None:
@@ -64,14 +64,26 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     print("[2/3] DiffSinger 推理中（首次加载模型要几十秒）…", flush=True)
-    t0 = time.time()
-    p = subprocess.run(cmd, cwd=str(DIFFSINGER), env=env,
-                       capture_output=True, text=True, encoding="utf-8", errors="replace",
-                       timeout=1800)
-    if p.returncode != 0 or not out_wav.is_file():
-        tail = ((p.stderr or "") + (p.stdout or ""))[-1500:]
-        raise RuntimeError("DiffSinger 推理失败:\n%s" % tail)
-    print("      推理完成，用时 %.1fs → %s" % (time.time() - t0, out_wav), flush=True)
+    # 推理输出直接落日志文件：不走管道，进程意外退出也能看到死前的输出
+    log_path = OUT_DIR / "推理日志.log"
+    last_err = ""
+    for attempt in (1, 2):
+        t0 = time.time()
+        with open(log_path, "ab") as log:
+            log.write(("\n==== %s 第 %d 次尝试 ====\n"
+                       % (time.strftime("%H:%M:%S"), attempt)).encode("utf-8"))
+            log.flush()
+            p = subprocess.run(cmd, cwd=str(DIFFSINGER), env=env,
+                               stdout=log, stderr=subprocess.STDOUT,
+                               timeout=1800)
+        if p.returncode == 0 and out_wav.is_file():
+            print("      推理完成，用时 %.1fs → %s" % (time.time() - t0, out_wav), flush=True)
+            return
+        last_err = "infer.py 退出码 %s，输出见 %s" % (p.returncode, log_path.name)
+        if attempt == 1:
+            print("      第 1 次推理异常（%s），自动重试一次…" % last_err, flush=True)
+            time.sleep(3)
+    raise RuntimeError("DiffSinger 推理失败: %s" % last_err)
 
 
 def convert_voice(in_wav: Path, role: str, out_wav: Path):
