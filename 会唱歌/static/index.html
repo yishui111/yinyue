@@ -71,8 +71,13 @@
 <main>
   <div class="card">
     <h2>① 旋律 song.json</h2>
+    <div class="row" style="align-items:center">
+      <div class="hint" style="flex:1">没有 song.json？<b>点右边按钮下载要求文档 → 发给 DeepSeek 并告诉它你要用哪首音乐
+        → DeepSeek 回你一个 song.json → 粘贴到下面文本框</b>。也可以用示例，或上传获取旋律工作台导出的文件。</div>
+      <div style="flex:none"><a href="/api/spec"><button class="ghost" type="button">⬇ 下载《JSON 生成要求文档》</button></a></div>
+    </div>
     <div class="row">
-      <div style="flex:2.2"><label>粘贴 song.json（或点右边的按钮）</label>
+      <div style="flex:2.2"><label>粘贴 song.json（DeepSeek 生成的，或工作台导出的）</label>
         <textarea id="songJson" placeholder='{"title": "..., "lines": [{"line_id":0, "notes":[{"i":0,"char":"你","midi":60,"start":0,"duration":0.5}]}]}'></textarea>
       </div>
       <div style="flex:.8; display:flex; flex-direction:column; gap:8px;">

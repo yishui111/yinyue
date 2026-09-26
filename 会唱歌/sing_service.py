@@ -35,6 +35,7 @@ import sing
 ROOT = Path(__file__).resolve().parent
 STATIC_DIR = ROOT / "static"
 TESTDATA = ROOT / "testdata"
+SPEC_DOC = ROOT / "DeepSeek生成songjson要求文档.md"
 RENDER_LOCK = threading.Lock()
 
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -81,6 +82,20 @@ class Handler(BaseHTTPRequestHandler):
                 "song": json.loads((TESTDATA / "小星星.json").read_text(encoding="utf-8-sig")),
                 "lyrics": json.loads((TESTDATA / "填词示例.json").read_text(encoding="utf-8-sig")),
             })
+        if path == "/api/spec":
+            # 下载「DeepSeek 生成 song.json 要求文档」
+            if not SPEC_DOC.is_file():
+                return self.send_json({"error": "要求文档不存在"}, 404)
+            data = SPEC_DOC.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/markdown; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Content-Disposition",
+                             "attachment; filename*=UTF-8''%s"
+                             % urllib.parse.quote(SPEC_DOC.name))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if path == "/health":
             roles = []
             try:
