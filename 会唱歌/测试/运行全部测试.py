@@ -167,9 +167,8 @@ def write_report():
             info = "%.0f KB" % (f.stat().st_size / 1024)
         lines.append("| %s | %s | %s（%s） |" % (esc(f.name), esc(src), esc(desc), info))
     lines.append("\n## 说明\n")
-    lines.append("- 换声（--role / 页面角色下拉框）依赖 3-so-vits-svc 的 6843 服务在线；"
-                 "本次测试时 6843 %s，换声链路的接口与总控页同款。" %
-                 ("未启动" if not any("svc_roles" in r[3] for r in ROWS) else "有角色"))
+    lines.append("- 换声走本文件夹自带的 换声引擎\（so-vits-svc 4.1 推理代码 + 换声引擎\models\ 角色），"
+                 "不再依赖外部 6843 服务。")
     lines.append("- 字数校验、休止换气、null-midi 处理等规则见 `ds_builder.py` 顶部注释与 `说明.md` 第五节。")
     lines.append("- 模型仅限非商业用途（Opencpop 语料 CC-BY-NC 4.0）。")
     (TESTS / "测试报告.md").write_text("\n".join(lines), encoding="utf-8")

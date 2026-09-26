@@ -64,8 +64,8 @@ def write_report(rows):
         lines.append("| %s | %s | %s（%s） |" % (esc(f.name), esc(src), esc(desc), info))
 
     lines += ["", "## 说明\n",
-              "- 换声（--role / 页面角色下拉框）依赖 3-so-vits-svc 的 6843 服务在线；"
-              "接口与总控页同款，本次未启动 6843 故未覆盖换声链路。",
+              "- 换声走本文件夹自带的 换声引擎\（so-vits-svc 4.1 推理代码 + 换声引擎\models\ 角色），"
+              "不再依赖外部 6843 服务。",
               "- 服务日志：`输出\\服务日志.log`（8102 常驻服务）、`输出\\推理日志.log`（每次推理落盘）。",
               "- 模型仅限非商业用途（Opencpop 语料 CC-BY-NC 4.0）。"]
     out = TESTS / "测试报告.md"

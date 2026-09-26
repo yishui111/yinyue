@@ -2,7 +2,7 @@
 r"""
 把「旋律 + 歌词」真正唱出来：
   song.json + 填词 JSON → ds_builder 生成 .ds → DiffSinger 本地推理出干声
-  → （可选 --role）调 3-so-vits-svc(6843) 换成二次元角色音色 → 输出 wav
+  → （可选 --role）用本地换声引擎换成二次元角色音色 → 输出 wav
 
 用法：
   runtime\py312\python.exe sing.py song.json [填词.json] [-o 输出.wav]
@@ -10,6 +10,7 @@ r"""
 
 模型：checkpoints\0211_opencpop_ds1000_keyshift（openvpi 官方发布，中文，
       Opencpop+DS-1000 训练，仅限非商业用途）+ nsf_hifigan 声码器。
+角色音色：换声引擎\models\（so-vits-svc 本地换声，见 换声引擎\svc_local.py）。
 """
 import argparse
 import json
@@ -17,18 +18,14 @@ import os
 import subprocess
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 RUNTIME_PY = ROOT / "runtime" / "py312" / "python.exe"
 DIFFSINGER = ROOT / "diffsinger"
+ENGINE = ROOT / "换声引擎"
 EXP_NAME = "0211_opencpop_ds1000_keyshift"
 OUT_DIR = ROOT / "输出"
-SVC_URL = "http://127.0.0.1:6843"
-
-# 绕开系统代理（同 0-web 的历史坑：127.0.0.1 被送代理会 502）
-OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def build_ds_file(song_path: Path, lyrics_path, ds_path: Path):
@@ -87,30 +84,15 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
 
 
 def convert_voice(in_wav: Path, role: str, out_wav: Path):
-    """调 3-so-vits-svc(6843) 把干声换成角色音色（接口同 0-web 总控页）"""
-    boundary = "----sing" + str(int(time.time() * 1000))
-    fdata = in_wav.read_bytes()
-    parts = [
-        ("--" + boundary).encode(), b'Content-Disposition: form-data; name="model"', b"", role.encode(),
-        ("--" + boundary).encode(), b'Content-Disposition: form-data; name="transpose"', b"", b"0",
-        ("--" + boundary).encode(), b'Content-Disposition: form-data; name="auto_f0"', b"", b"1",
-        ("--" + boundary).encode(), b'Content-Disposition: form-data; name="cluster_ratio"', b"", b"0",
-        ("--" + boundary).encode(),
-        ('Content-Disposition: form-data; name="audio"; filename="vocal.wav"').encode(),
-        b"Content-Type: application/octet-stream", b"", fdata,
-        ("--" + boundary + "--").encode(),
-    ]
-    body = b"\r\n".join(parts) + b"\r\n"
-    req = urllib.request.Request(
-        SVC_URL + "/svc/change_voice", data=body,
-        headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
-    print("[3/3] 6843 换声（角色 %s）…" % role, flush=True)
-    with OPENER.open(req, timeout=1800) as r:
-        data = r.read()
-    if data[:4] != b"RIFF":
-        raise RuntimeError("换声失败，6843 返回的不是 wav: %s" % data[:200])
+    """本地换声引擎（换声引擎\svc_local.py）：干声 → 换声引擎\models\ 里的角色音色"""
+    if str(ENGINE) not in sys.path:
+        sys.path.insert(0, str(ENGINE))
+    import svc_local
+    print("[3/3] 本地换声（角色 %s，首次加载角色模型约 20~60s）…" % role, flush=True)
+    t0 = time.time()
+    data, sr = svc_local.convert(in_wav.read_bytes(), role)
     out_wav.write_bytes(data)
-    print("      换声完成 → %s" % out_wav, flush=True)
+    print("      换声完成，用时 %.1fs → %s" % (time.time() - t0, out_wav), flush=True)
 
 
 def main():
@@ -118,7 +100,7 @@ def main():
     ap.add_argument("song", help="song.json（获取旋律 工作台导出）")
     ap.add_argument("lyrics", nargs="?", help="DeepSeek 填词 JSON；缺省用 song 里的原歌词字")
     ap.add_argument("-o", "--out", default="", help="输出 wav 路径（默认 输出\\<歌名>_唱歌.wav）")
-    ap.add_argument("--role", default="", help="6843 里的角色名，填了就再换一次二次元音色")
+    ap.add_argument("--role", default="", help="换声引擎\models\ 里的角色名，填了就再换一次二次元音色")
     ap.add_argument("--key", type=int, default=0, help="整体升降调（半音，正升负降）")
     ap.add_argument("--gender", type=float, default=None, help="-1~1 音色男女调整（0 不动）")
     ap.add_argument("--seed", type=int, default=-1, help="扩散采样随机种子")

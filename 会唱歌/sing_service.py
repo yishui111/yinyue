@@ -11,16 +11,17 @@ r"""
         {"song": {...song.json 原样...},
          "lyrics": {"lines":[{"line_id":0,"text":"弯弯月亮像小船"}]},   ← text 或 chars 均可；
                     整项省略则唱 song 里的原字
-         "role": "furina",      ← 可选，6843 的角色，填了就再换二次元音色
+         "role": "furina",      ← 可选，换声引擎\models\ 里的角色，填了就再换二次元音色
          "key": 0, "gender": 0, "seed": -1}
         返回 audio/wav（同步推理，长歌要等几十秒；错误返回 JSON）
   逐条警告放在响应头 X-Sing-Warnings（urlencoded，多行用 | 分隔）
 
-只做编排（.ds 生成 + 子进程推理 + 6843 转发），不起任何模型。
+只做编排（.ds 生成 + 子进程推理 + 本地换声）。
 用法：runtime\py312\python.exe sing_service.py [-a 127.0.0.1] [-p 8102]
 """
 import argparse
 import json
+import sys
 import tempfile
 import threading
 import time
@@ -36,6 +37,8 @@ ROOT = Path(__file__).resolve().parent
 STATIC_DIR = ROOT / "static"
 TESTDATA = ROOT / "testdata"
 SPEC_DOC = ROOT / "DeepSeek生成songjson要求文档.md"
+sys.path.insert(0, str(ROOT / "换声引擎"))
+import svc_local  # 本地换声（角色来自 换声引擎\models\，不再依赖外部 6843 服务）
 RENDER_LOCK = threading.Lock()
 
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -97,12 +100,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             return
         if path == "/health":
-            roles = []
-            try:
-                with sing.OPENER.open(sing.SVC_URL + "/models", timeout=4) as r:
-                    roles = json.loads(r.read().decode("utf-8"))
-            except Exception:
-                pass
+            roles = svc_local.roles()
             return self.send_json({
                 "status": "ok",
                 "model": sing.EXP_NAME,

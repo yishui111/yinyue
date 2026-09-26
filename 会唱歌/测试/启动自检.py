@@ -50,7 +50,7 @@ def c_health():
     with OPENER.open(BASE + "/health", timeout=15) as r:
         h = json.loads(r.read())
     assert h.get("status") == "ok" and h.get("model_ready"), "health=%s" % h
-    return "模型 %s 就绪，6843 角色 %d 个" % (h["model"], len(h.get("svc_roles") or []))
+    return "模型 %s 就绪，换声角色 %d 个" % (h["model"], len(h.get("svc_roles") or []))
 
 
 def c_demo():
