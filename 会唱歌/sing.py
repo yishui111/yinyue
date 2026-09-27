@@ -49,6 +49,17 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
         raise RuntimeError("缺 runtime\\py312\\python.exe，先跑 安装环境.bat")
     if not (DIFFSINGER / "checkpoints" / EXP_NAME).is_dir():
         raise RuntimeError("缺模型 checkpoints\\%s，先跑 安装环境.bat 或看 说明.md" % EXP_NAME)
+    # 首选：常驻渲染器（模型进程内只加载一次，第二次合成起只要推理本身的时间）
+    try:
+        import ds_render
+        print("[2/3] DiffSinger 推理中（常驻渲染器%s）…" %
+              ("已就绪" if ds_render.loaded() else "首次要加载模型 40s~3min"), flush=True)
+        ds_params = json.loads(ds_path.read_text(encoding="utf-8"))
+        ds_render.render(ds_params, out_wav, key=key, gender=gender, seed=seed)
+        return
+    except Exception as e:
+        print("      常驻渲染器异常，退回子进程方式：%r" % (e,), flush=True)
+    # 回退：子进程推理（输出直接落日志文件，进程意外退出也能看到死前的输出）
     out_dir = out_wav.parent
     title = out_wav.stem
     cmd = [str(RUNTIME_PY), "-u", "scripts/infer.py", "acoustic", str(ds_path),
@@ -60,7 +71,7 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
         cmd += ["--seed", str(seed)]
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    print("[2/3] DiffSinger 推理中（首次加载模型要几十秒）…", flush=True)
+    print("[2/3] DiffSinger 推理中（子进程，首次加载模型要几十秒）…", flush=True)
     # 推理输出直接落日志文件：不走管道，进程意外退出也能看到死前的输出
     log_path = OUT_DIR / "推理日志.log"
     last_err = ""

@@ -54,6 +54,7 @@ def write_report(rows):
     names = {
         "CLI_小星星.wav": ("sing.py 命令行", "《小星星》旋律 + 示例新词，DiffSinger 干声"),
         "服务_小星星.wav": ("POST /sing 接口", "同上，走 HTTP 服务（8123 测试端口）"),
+        "服务_小星星_纳西妲换声.wav": ("POST /sing 接口 + 本地换声", "同上再过本地换声引擎（纳西妲音色）"),
     }
     for f in sorted((TESTS / "产物").glob("*")):
         src, desc = names.get(f.name, ("其他", f.name))
@@ -64,7 +65,7 @@ def write_report(rows):
         lines.append("| %s | %s | %s（%s） |" % (esc(f.name), esc(src), esc(desc), info))
 
     lines += ["", "## 说明\n",
-              "- 换声走本文件夹自带的 换声引擎\（so-vits-svc 4.1 推理代码 + 换声引擎\models\ 角色），"
+              r"- 换声走本文件夹自带的 换声引擎\（so-vits-svc 4.1 推理代码 + 换声引擎\models\ 角色），"
               "不再依赖外部 6843 服务。",
               "- 服务日志：`输出\\服务日志.log`（8102 常驻服务）、`输出\\推理日志.log`（每次推理落盘）。",
               "- 模型仅限非商业用途（Opencpop 语料 CC-BY-NC 4.0）。"]
