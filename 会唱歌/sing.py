@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -95,14 +96,52 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
 
 
 def convert_voice(in_wav: Path, role: str, out_wav: Path):
-    r"""本地换声引擎（换声引擎\svc_local.py）：干声 → 换声引擎\models\ 里的角色音色"""
-    if str(ENGINE) not in sys.path:
-        sys.path.insert(0, str(ENGINE))
-    import svc_local
-    print("[3/3] 本地换声（角色 %s，首次加载角色模型约 20~60s）…" % role, flush=True)
+    r"""本地换声：经 换声引擎\svc_worker.py（8106，独立进程）调 so-vits 推理。
+
+    独立进程的原因：so-vits 的 onnxruntime(CUDA) 在服务主进程里加载角色会原生崩溃；
+    独立后与命令行直跑环境一致。角色模型按需加载缓存复用，worker 空闲 15 分钟自退。
+    """
+    worker_port = 8106
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+    def alive():
+        try:
+            with opener.open("http://127.0.0.1:%d/health" % worker_port, timeout=3) as r:
+                return r.status == 200
+        except Exception:
+            return False
+
+    if not alive():
+        print("[3/3] 启动本地换声引擎（首次加载角色模型 20~100s）…", flush=True)
+        log = open(OUT_DIR / "换声引擎日志.log", "ab")
+        subprocess.Popen(
+            [str(RUNTIME_PY), "-u", str(ENGINE / "svc_worker.py"), "-p", str(worker_port)],
+            cwd=str(ROOT), stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+            close_fds=True)
+        for _ in range(40):
+            if alive():
+                break
+            time.sleep(2)
+        else:
+            raise RuntimeError("换声引擎进程未能就绪（详见 输出\换声引擎日志.log）")
+    print("[3/3] 本地换声（角色 %s）…" % role, flush=True)
+    import tempfile
     t0 = time.time()
-    data, sr = svc_local.convert(in_wav.read_bytes(), role)
-    out_wav.write_bytes(data)
+    with tempfile.TemporaryDirectory(prefix="svc_") as td:
+        src = Path(td) / "干声.wav"
+        dst = Path(td) / "换声.wav"
+        src.write_bytes(in_wav.read_bytes())
+        body = json.dumps({"in": str(src), "out": str(dst), "role": role}).encode("utf-8")
+        req = urllib.request.Request("http://127.0.0.1:%d/convert" % worker_port,
+                                     data=body, method="POST",
+                                     headers={"Content-Type": "application/json"})
+        opener2 = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener2.open(req, timeout=1200) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+        if not dst.is_file():
+            raise RuntimeError("换声没有产出：%s" % resp)
+        out_wav.write_bytes(dst.read_bytes())
     print("      换声完成，用时 %.1fs → %s" % (time.time() - t0, out_wav), flush=True)
 
 

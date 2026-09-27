@@ -267,6 +267,7 @@ $('btnSing').onclick = async () => {
 };
 
 checkHealth();
+if (location.search.includes('demo=1')) { $('btnDemo').click(); }  // 深链接：截图/演示自动载入示例
 </script>
 </body>
 </html>

@@ -55,8 +55,10 @@ def write_report(rows):
         "CLI_小星星.wav": ("sing.py 命令行", "《小星星》旋律 + 示例新词，DiffSinger 干声"),
         "服务_小星星.wav": ("POST /sing 接口", "同上，走 HTTP 服务（8123 测试端口）"),
         "服务_小星星_纳西妲换声.wav": ("POST /sing 接口 + 本地换声", "同上再过本地换声引擎（纳西妲音色）"),
+        "演示视频_小星星_纳西妲.mp4": ("ffmpeg 可视化", "纳西妲换声版的波形动画视频（1280x720，含声音）"),
+        "波形对比图.png": ("matplotlib", "干声 vs 换声版波形对比图"),
     }
-    for f in sorted((TESTS / "产物").glob("*")):
+    for f in sorted((TESTS / "产物").glob("*")) + sorted((TESTS / "截图").glob("*.png")):
         src, desc = names.get(f.name, ("其他", f.name))
         try:
             info = wav_info(f) if f.suffix == ".wav" else "%.0f KB" % (f.stat().st_size / 1024)

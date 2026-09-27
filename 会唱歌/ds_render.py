@@ -1,72 +1,65 @@
 # -*- coding: utf-8 -*-
-r"""常驻 DiffSinger 渲染器。
+r"""常驻渲染器客户端：把 DiffSinger 渲染放进独立工作进程（ds_render_worker.py，8105）。
 
-之前每次合成都要新起 infer.py 子进程，重复付「import torch（40s~3min）+
-读 800MB checkpoint」的开销，这是合成慢的主因。本模块在进程内把模型
-常驻（懒加载：第一次合成时加载，之后复用），后续合成只花推理本身的时间。
+为什么要独立进程：DiffSinger 与 so-vits 引擎代码里有同名模块（utils/modules），
+同进程导入必然冲突；分开进程各自干净。worker 的模型只加载一次，之后每次合成
+只花推理本身的时间（实测 8~30 秒）；空闲 15 分钟自动退出释放显存。
 
-失败自动回退：sing.run_diffsinger 在本模块抛异常时退回老的子进程方式。
+合成失败时抛异常 → sing.run_diffsinger 自动退回老的子进程 infer.py 方式。
 """
-import os
-import sys
+import json
+import subprocess
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-REPO = ROOT / "diffsinger"
-EXP_NAME = "0211_opencpop_ds1000_keyshift"
+WORKER = ROOT / "ds_render_worker.py"
+PY = ROOT / "runtime" / "py312" / "python.exe"
+PORT = 8105
+OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
-_infer = None
-_load_secs = 0.0
 
-
-def _bootstrap():
-    """加载模型（进程内只做一次）。需要 chdir 到 diffsinger 仓库跑。"""
-    global _infer, _load_secs
-    if _infer is not None:
-        return _infer
-    t0 = time.time()
-    old_cwd = os.getcwd()
-    old_argv = sys.argv
-    # infer.py 的启动方式就是改 sys.argv 后 set_hparams()，这里照搬
-    sys.argv = [str(REPO / "scripts" / "infer.py"), "--exp_name", EXP_NAME, "--infer"]
+def _alive(timeout=3):
     try:
-        os.chdir(REPO)
-        from utils.hparams import set_hparams
-        set_hparams()
-        from inference.ds_acoustic import DiffSingerAcousticInfer
-        _infer = DiffSingerAcousticInfer(load_vocoder=True)
-    finally:
-        sys.argv = old_argv
-        os.chdir(old_cwd)
-    _load_secs = time.time() - t0
-    print("[常驻渲染器] 模型加载完成，用时 %.1fs（之后复用）" % _load_secs, flush=True)
-    return _infer
+        with OPENER.open("http://127.0.0.1:%d/health" % PORT, timeout=timeout) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def _ensure_worker():
+    if _alive():
+        return
+    print("[常驻渲染器] 启动渲染工作进程（首次要加载模型 40s~3min）…", flush=True)
+    log = open(ROOT / "输出" / "渲染器日志.log", "ab")
+    subprocess.Popen([str(PY), "-u", str(WORKER), "-p", str(PORT)], cwd=str(ROOT),
+                     stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+                     creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                     close_fds=True)
+    for _ in range(150):  # worker 起服务前就把模型加载好，这里等待最多 ~7.5 分钟
+        if _alive():
+            return
+        time.sleep(3)
+    raise RuntimeError("渲染工作进程 8105 未能就绪（详见 输出\\渲染器日志.log）")
 
 
 def render(ds_params: list, out_wav: Path, key: int = 0, gender=None, seed: int = -1):
-    """ds_params：ds_builder 生成的分段列表 → 渲染写 out_wav（等价 infer.py acoustic）。"""
-    infer_ins = _bootstrap()
-    params = ds_params
-    if key:
-        from utils.infer_utils import trans_key
-        params = trans_key(params, key)
-    if gender is not None:
-        for param in params:
-            param["gender"] = gender
-    out_wav.parent.mkdir(parents=True, exist_ok=True)
-    old_cwd = os.getcwd()
+    _ensure_worker()
+    body = json.dumps({"params": ds_params, "out": str(out_wav), "key": key,
+                       "gender": gender, "seed": seed}).encode("utf-8")
+    t0 = time.time()
     try:
-        os.chdir(REPO)
-        t0 = time.time()
-        infer_ins.run_inference(params, out_dir=out_wav.parent, title=out_wav.stem,
-                                num_runs=1, seed=seed if seed >= 0 else -1)
-    finally:
-        os.chdir(old_cwd)
+        with OPENER.open("http://127.0.0.1:%d/render" % PORT, data=body, timeout=1800) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")
+        raise RuntimeError("常驻渲染失败：%s %s" % (e.code, detail[:300]))
     if not out_wav.is_file():
-        raise RuntimeError("常驻渲染器没有产出 %s" % out_wav)
+        raise RuntimeError("常驻渲染没有产出 %s（%s）" % (out_wav, resp))
     print("[常驻渲染器] 合成用时 %.1fs" % (time.time() - t0), flush=True)
 
 
 def loaded():
-    return _infer is not None
+    return _alive()

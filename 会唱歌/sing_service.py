@@ -37,6 +37,15 @@ TESTDATA = ROOT / "testdata"
 SPEC_DOC = ROOT / "DeepSeek生成songjson要求文档.md"
 sys.path.insert(0, str(ROOT / "换声引擎"))
 import svc_local  # 本地换声（角色来自 换声引擎\models\，不再依赖外部 6843 服务）
+
+_roles_cache = {"ts": 0.0, "roles": []}
+
+
+def cached_roles():
+    if time.time() - _roles_cache["ts"] > 5:
+        _roles_cache["roles"] = svc_local.roles()
+        _roles_cache["ts"] = time.time()
+    return _roles_cache["roles"]
 RENDER_LOCK = threading.Lock()
 
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -98,7 +107,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
             return
         if path == "/health":
-            roles = svc_local.roles()
+            roles = cached_roles()
             return self.send_json({
                 "status": "ok",
                 "model": sing.EXP_NAME,
