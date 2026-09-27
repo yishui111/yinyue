@@ -4,3 +4,5 @@ PyYAML
 tqdm
 pypinyin
 lightning
+rich
+loguru

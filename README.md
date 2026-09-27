@@ -12,6 +12,7 @@
 | `4-e2e/` | **端到端**（我写的）：音乐视频 → 提音轨 → 人声伴奏分离 → 换二次元音色 → 混音 → 封装回视频 | 调 6843 | — |
 | `获取旋律/` | **旋律工作台**：歌曲 → 分离人声 → 提旋律/提歌词 → song.json → DeepSeek 依曲填词 | Demucs + librosa.pyin + faster-whisper + DeepSeek | 8765 |
 | `会唱歌/` | **唱出来**（我写的）：song.json + 填好的新词 → DiffSinger 直接唱出人声 → 自带 `换声引擎\`（so-vits 推理代码 + 6 个二次元角色音色）本地换声，**自包含不依赖其他目录** | [openvpi/DiffSinger](https://github.com/openvpi/DiffSinger)（v2.5.1 + 官方 0211 中文声学模型）+ so-vits-svc 4.1 推理 | 8102 |
+| `会唱歌/训练/` | **训练工作台**：自己的素材 → so-vits-svc 4.1 唱歌音色，训完自动进换声引擎 | so-vits-svc 4.1 训练（含官方 vec768l12 底模） | 8103 |
 
 **这个仓库只提交我自己写的部分**：总控页（`0-web/`）、自研换声服务
 `3-so-vits-svc/svc_service.py`、端到端流水线（`4-e2e/`）、各引擎的
