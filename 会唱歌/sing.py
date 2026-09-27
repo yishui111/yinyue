@@ -95,7 +95,7 @@ def run_diffsinger(ds_path: Path, out_wav: Path, key=0, gender=None, seed=-1):
 
 
 def convert_voice(in_wav: Path, role: str, out_wav: Path):
-    """本地换声引擎（换声引擎\svc_local.py）：干声 → 换声引擎\models\ 里的角色音色"""
+    r"""本地换声引擎（换声引擎\svc_local.py）：干声 → 换声引擎\models\ 里的角色音色"""
     if str(ENGINE) not in sys.path:
         sys.path.insert(0, str(ENGINE))
     import svc_local
@@ -111,7 +111,7 @@ def main():
     ap.add_argument("song", help="song.json（获取旋律 工作台导出）")
     ap.add_argument("lyrics", nargs="?", help="DeepSeek 填词 JSON；缺省用 song 里的原歌词字")
     ap.add_argument("-o", "--out", default="", help="输出 wav 路径（默认 输出\\<歌名>_唱歌.wav）")
-    ap.add_argument("--role", default="", help="换声引擎\models\ 里的角色名，填了就再换一次二次元音色")
+    ap.add_argument("--role", default="", help=r"换声引擎\models\ 里的角色名，填了就再换一次二次元音色")
     ap.add_argument("--key", type=int, default=0, help="整体升降调（半音，正升负降）")
     ap.add_argument("--gender", type=float, default=None, help="-1~1 音色男女调整（0 不动）")
     ap.add_argument("--seed", type=int, default=-1, help="扩散采样随机种子")

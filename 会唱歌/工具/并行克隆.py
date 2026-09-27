@@ -10,7 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent  # 会唱歌
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "1-rvc" / "runtime" / "py312"
 DST = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "runtime" / "py312"
 

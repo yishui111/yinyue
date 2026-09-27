@@ -18,7 +18,6 @@ r"""
 - 休止：行内空隙 ≥0.1s 记 SP（≥0.5s 先 AP 后 SP）；midi 为 null 的音符按休止处理
 """
 import json
-import math
 import pathlib
 import re
 

@@ -16,7 +16,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent  # 会唱歌
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "3-so-vits-svc"
 ENGINE = ROOT / "换声引擎"
 CODE_DST = ENGINE / "so-vits-svc"

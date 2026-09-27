@@ -19,7 +19,7 @@ if exist "%PY%" goto :check
 echo [1/3] 克隆运行环境（并行硬链接，来自 1-rvc）...
 where py >nul 2>nul
 if errorlevel 1 goto :nopy
-py -3 并行克隆.py
+py -3 工具\并行克隆.py
 if errorlevel 1 goto :fail
 
 :check

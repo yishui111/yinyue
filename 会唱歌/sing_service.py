@@ -25,9 +25,7 @@ import sys
 import tempfile
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 

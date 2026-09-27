@@ -74,7 +74,7 @@ def roles():
 
 
 def _get_model(name):
-    """加载角色模型（调用方需已 chdir 到 REPO，pretrain\ 相对路径才解析得到）"""
+    r"""加载角色模型（调用方需已 chdir 到 REPO，pretrain\ 相对路径才解析得到）"""
     global _loaded
     if _loaded is not None and _loaded[0] == name:
         return _loaded[1], _loaded[2]

@@ -18,7 +18,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-TRAIN_ROOT = Path(__file__).resolve().parent
+TRAIN_ROOT = Path(__file__).resolve().parent.parent / "训练"
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else TRAIN_ROOT.parent.parent / "3-so-vits-svc"
 REPO_DST = TRAIN_ROOT / "so-vits-svc"
 SVC_ENGINE_PRETRAIN = TRAIN_ROOT.parent / "换声引擎" / "so-vits-svc" / "pretrain"
