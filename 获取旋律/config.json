@@ -1,0 +1,15 @@
+{
+  "deepseek_api_key": "",
+  "deepseek_base_url": "https://api.deepseek.com",
+  "deepseek_model": "deepseek-chat",
+  "whisper_model": "small",
+  "whisper_language": "zh",
+  "separate_vocals": true,
+  "gptsovits_mode": "panel",
+  "gptsovits_url": "http://127.0.0.1:8550",
+  "gptsovits_dir": "E:\\值得用的项目\\文字转自然对话语音",
+  "gptsovits_voice": "",
+  "gptsovits_ref_audio": "",
+  "gptsovits_prompt_text": "",
+  "gptsovits_prompt_lang": "zh"
+}

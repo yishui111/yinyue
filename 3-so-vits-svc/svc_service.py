@@ -72,6 +72,11 @@ def scan_models():
                 pth = cand
                 break
         if pth is None:
+            # 没有独立导出的 ckpt 时，接受直接改名为 角色_G.pth 的权重（优先挑最大的）
+            g_files = sorted(MODELS_DIR.glob(stem + "_G*.pth"),
+                             key=lambda p: p.stat().st_size, reverse=True)
+            pth = g_files[0] if g_files else None
+        if pth is None:
             continue
         kmeans = MODELS_DIR / f"{stem}_kmeans.pt"
         feat = MODELS_DIR / f"{stem}_feature_and_index.pkl"

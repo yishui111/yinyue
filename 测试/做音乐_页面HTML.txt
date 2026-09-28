@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>做音乐 · 故事变歌曲</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#f6f7fb; --card:#fff; --ink:#222; --mut:#777; --acc:#2563eb; --ok:#16a34a; --warn:#dc2626; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 "Microsoft YaHei",system-ui,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:20px; }
+  h1 { font-size:22px; margin:8px 0 2px; }
+  .sub { color:var(--mut); margin-bottom:16px; }
+  .card { background:var(--card); border-radius:12px; padding:16px 18px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card h2 { font-size:16px; margin:0 0 10px; }
+  label { display:block; font-size:13px; color:var(--mut); margin:8px 0 4px; }
+  input[type=text], textarea { width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 10px; font:inherit; }
+  textarea { min-height:130px; font-family:Consolas,monospace; font-size:13px; white-space:pre; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  button { border:0; border-radius:8px; padding:9px 18px; font:inherit; cursor:pointer; background:#e8eaf1; }
+  button.primary { background:var(--acc); color:#fff; }
+  button.danger { background:var(--warn); color:#fff; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  pre.out { background:#0f172a; color:#d7e3ff; border-radius:8px; padding:10px 12px; font-size:12px; max-height:260px; overflow:auto; white-space:pre-wrap; display:none; }
+  .hint { font-size:13px; color:var(--mut); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:7px 8px; border-bottom:1px solid #eee; vertical-align:middle; }
+  .state-完成 { color:var(--ok); font-weight:600; }
+  .state-失败, .state-已停止 { color:var(--warn); font-weight:600; }
+  audio { width:260px; height:34px; }
+  .tag { display:inline-block; background:#eef2ff; color:var(--acc); border-radius:6px; padding:1px 8px; font-size:12px; margin-left:6px; }
+  ol.steps { margin:0; padding-left:0; list-style:none; counter-reset:step; }
+  ol.steps li { counter-increment:step; position:relative; padding:6px 0 6px 44px; border-bottom:1px dashed #eee; }
+  ol.steps li:last-child { border-bottom:0; }
+  ol.steps li::before { content:counter(step); position:absolute; left:0; top:8px; width:28px; height:28px;
+    background:var(--acc); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  a.btn { display:inline-block; background:var(--acc); color:#fff; text-decoration:none; border-radius:8px; padding:6px 14px; font-size:14px; }
+  .steps b.t { font-size:15px; }
+  .steps .d { color:var(--mut); font-size:13px; }
+  .msg { font-size:13px; min-height:18px; margin-top:6px; }
+  .msg.ok { color:var(--ok); }
+  .msg.err { color:var(--warn); }
+  code.k { background:#f0f1f5; border-radius:4px; padding:0 5px; font-family:Consolas,monospace; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>做音乐 <span class="hint">故事 → DeepSeek 出词曲 → 本地 YuE2 唱出来</span></h1>
+  <div class="sub">四步流程见下:下载约束词发给 DeepSeek → 讲故事 → 粘贴词曲 → 一键合成开唱。</div>
+
+  <div class="card">
+    <h2>使用流程(完整闭环)</h2>
+    <div class="row" style="margin-bottom:10px">
+      <span class="hint">三份给 DeepSeek 的约束词文档:</span>
+      <a class="btn" href="/api/constraint_doc" download>⬇ 作曲约束词</a>
+      <a class="btn" href="/api/doc/extract" download>⬇ 旋律提取约束词</a>
+      <a class="btn" href="/api/doc/lyrics" download>⬇ 按旋律填词约束词</a>
+    </div>
+    <ol class="steps">
+      <li><b class="t">写词作曲(两种方式任选)</b><br>
+        <span class="d">配了 API 密钥:在 ⓪ 输入故事自动生成。手动:下载「作曲约束词」+ 故事发给 DeepSeek,
+        把输出的 json/abc 粘贴到 ① 表单。</span></li>
+      <li><b class="t">想仿照某首歌?先把旋律"提"进曲库</b><br>
+        <span class="d">下载「旋律提取约束词」,连同一首歌的信息(歌名/简谱/乐谱文本)发给 DeepSeek,
+        把输出的 abc 用 ⓪ 区块的「从文件入库」上传;或在 🎼 曲谱工坊让 DeepSeek 原创新旋律。</span></li>
+      <li><b class="t">选旋律,按旋律写词</b><br>
+        <span class="d">⓪ 的「旋律来源」下拉框选中曲库里的旋律,输入故事点生成 —— DeepSeek 只按这条旋律填词。
+        手动路线:下载「按旋律填词约束词」,连同该曲谱内容 + 故事发给 DeepSeek,把输出的 json 粘贴到 ①。</span></li>
+      <li><b class="t">合成,开唱</b><br>
+        <span class="d">填歌名点「▶ 开始合成」,约一分钟;唱完在「我的作品」在线试听。</span></li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>⓪ 从故事直接生成词曲(推荐,需 DeepSeek API 密钥)</h2>
+    <div class="row">
+      <div style="flex:1; min-width:260px;">
+        <label>DeepSeek API 密钥(保存在本机 config.json,只上传给 DeepSeek 官方接口)</label>
+        <input type="password" id="ds_key" placeholder="sk-...">
+      </div>
+      <div style="align-self:end"><button onclick="saveKey()">保存密钥</button></div>
+      <div style="align-self:end"><span class="hint" id="key_state"></span></div>
+    </div>
+    <label>旋律来源</label>
+    <select id="melody_sel" style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; font:inherit;">
+      <option value="">自动 —— DeepSeek 写词 + 作曲</option>
+    </select>
+    <div class="hint" id="melody_dir"></div>
+    <label>你的故事(任何题材,几句话即可)</label>
+    <textarea id="story" style="min-height:80px" placeholder="例如:下雪的傍晚,一只小狐狸迷了路,一个提灯的女孩把它送回了森林深处的家……"></textarea>
+    <div class="row">
+      <button class="primary" id="btn_llm" onclick="generateSong()">✨ 生成歌词和曲谱</button>
+      <span class="hint" id="llm_state">生成约需 1~2 分钟,完成后自动填入下面 ① 的表单</span>
+    </div>
+    <div class="msg" id="llm-msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎼 曲谱工坊(生成新旋律入库)</h2>
+    <div class="row">
+      <div style="flex:1; min-width:220px;">
+        <label>旋律描述(风格/情绪/拍号/速度)</label>
+        <input type="text" id="craft_desc" placeholder="例如:小调、忧伤的钢琴旋律、3/4 拍、70 BPM">
+      </div>
+      <div style="min-width:160px;">
+        <label>旋律名字(入库文件名)</label>
+        <input type="text" id="craft_name" placeholder="例如:雨夜钢琴">
+      </div>
+      <div style="align-self:end"><button id="btn_craft" onclick="craftMelody()">🎼 生成并入库</button></div>
+    </div>
+    <div class="msg" id="craft-msg"></div>
+    <div class="row" style="margin-top:10px; border-top:1px dashed #eee; padding-top:10px;">
+      <div style="flex:1">
+        <label>从文件入库(.abc 文件,旋律提谱输出/手写均可,自动官方校验)</label>
+        <input type="file" id="abc_file" accept=".abc,.txt">
+      </div>
+      <div style="align-self:end"><button onclick="uploadAbc()">📤 校验并入库</button></div>
+    </div>
+    <div class="msg" id="upload-msg"></div>
+    <div class="hint">生成后自动通过官方校验器检查并放入旋律库,「旋律来源」下拉框立即可选。</div>
+  </div>
+
+  <div class="card" id="card-sing">
+    <h2>① 合成一首歌</h2>
+    <label>歌名(作品文件夹名,可用中文)</label>
+    <input type="text" id="name" placeholder="例如:雪夜小狐狸">
+    <label>歌词 song.json(DeepSeek 输出的 ```json 代码块内容,必填)</label>
+    <textarea id="song_json" spellcheck="false" placeholder='{"id":"...","style":"Mandarin, ... 88 BPM","lyrics":"[Verse]\n...","cot":"full","seed":42}'></textarea>
+    <label>曲谱 score.abc(DeepSeek 输出的 ```abc 代码块内容,可选;留空则模型自己作旋律)</label>
+    <textarea id="score_abc" spellcheck="false" placeholder="X:1&#10;T:&#10;M:4/4&#10;..."></textarea>
+    <div class="row">
+      <button class="primary" id="btn_sing" onclick="startSing()">▶ 开始合成</button>
+      <button id="btn_stop" onclick="stopSing()" disabled>■ 停止合成</button>
+      <button onclick="loadExample()">载入示例(雪夜小狐狸)</button>
+      <span class="hint" id="sing_state"></span>
+    </div>
+    <pre class="out" id="sing_log"></pre>
+  </div>
+
+  <div class="card">
+    <h2>② 我的作品</h2>
+    <table id="works"><thead><tr><th>歌名</th><th>时长</th><th>合成时间</th><th>试听</th><th>曲谱</th></tr></thead><tbody></tbody></table>
+    <div class="row"><button onclick="refreshWorks()">↻ 刷新列表</button><span class="hint" id="works_root"></span></div>
+  </div>
+
+  <div class="card">
+    <h2>③ 环境自检</h2>
+    <div class="row"><button onclick="runCheck()">运行自检</button></div>
+    <pre class="out" id="check_out"></pre>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const msg = (id, text, cls) => { const el = $(id); el.textContent = text || ""; el.className = "msg" + (cls ? " " + cls : ""); };
+let jobId = null, poller = null;
+
+function fmt(s){ if(!s) return '—'; return Math.round(s) + ' 秒'; }
+function fmtDate(ts){ const d = new Date(ts * 1000); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+async function startSing(){
+  const body = {
+    name: document.getElementById('name').value,
+    song_json: document.getElementById('song_json').value,
+    score_abc: document.getElementById('score_abc').value
+  };
+  const r = await fetch('/api/sing', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const d = await r.json();
+  if (!r.ok) { alert(d.error || '提交失败'); return; }
+  jobId = d.job;
+  document.getElementById('btn_sing').disabled = true;
+  document.getElementById('btn_stop').disabled = false;
+  document.getElementById('sing_log').style.display = 'block';
+  poller = setInterval(pollStatus, 1500);
+  pollStatus();
+}
+
+async function pollStatus(){
+  if (!jobId) return;
+  const r = await fetch('/api/status/' + jobId);
+  if (!r.ok) return;
+  const d = await r.json();
+  document.getElementById('sing_state').textContent = `状态:${d.state} · 已用 ${d.elapsed}s`;
+  const log = document.getElementById('sing_log');
+  log.textContent = d.lines.join('\n');
+  log.scrollTop = log.scrollHeight;
+  if (d.state !== '合成中') {
+    clearInterval(poller); poller = null; jobId = null;
+    document.getElementById('btn_sing').disabled = false;
+    document.getElementById('btn_stop').disabled = true;
+    refreshWorks();
+  }
+}
+
+async function stopSing(){
+  if (!jobId) return;
+  await fetch('/api/stop/' + jobId, {method:'POST'});
+}
+
+async function loadKey(){
+  const d = await (await fetch('/api/llm/key')).json();
+  document.getElementById('key_state').textContent = d.has_key ? ('已保存密钥(尾号 ' + d.tail + ')') : '未保存密钥';
+}
+
+async function saveKey(){
+  const key = document.getElementById('ds_key').value.trim();
+  if (!key) { alert('请先粘贴 API 密钥'); return; }
+  await fetch('/api/llm/key', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key})});
+  document.getElementById('ds_key').value = '';
+  loadKey();
+}
+
+async function loadMelodies(){
+  const d = await (await fetch('/api/melodies')).json();
+  document.getElementById('melody_dir').textContent = '曲库目录:' + d.dir + '(放入 .abc 即出现在下拉框)';
+  const sel = document.getElementById('melody_sel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">自动 —— DeepSeek 写词 + 作曲</option>';
+  for (const m of d.melodies) {
+    const o = document.createElement('option');
+    o.value = m.name;
+    o.textContent = m.name + (m.bpm ? (' · ' + m.bpm + ' BPM') : '');
+    sel.appendChild(o);
+  }
+  sel.value = cur;
+}
+
+async function craftMelody(){
+  const desc = document.getElementById('craft_desc').value.trim();
+  const name = document.getElementById('craft_name').value.trim();
+  if (!desc || !name) { alert('请填写旋律描述和名字'); return; }
+  const btn = document.getElementById('btn_craft');
+  btn.disabled = true;
+  msg('craft-msg', '正在请 DeepSeek 作曲并校验,约 1~2 分钟……');
+  try {
+    const r = await fetch('/api/llm/melody', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({desc, name})});
+    const d = await r.json();
+    if (!r.ok) { msg('craft-msg', d.error || ('失败 ' + r.status), 'err'); return; }
+    await loadMelodies();
+    document.getElementById('melody_sel').value = d.name;
+    msg('craft-msg', `已入库并选中「${d.name}」,输入故事点「✨ 生成歌词和曲谱」即可按这条旋律填词。`, 'ok');
+  } catch (e) {
+    msg('craft-msg', '请求失败:' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function uploadAbc(){
+  const f = document.getElementById('abc_file').files[0];
+  if (!f) { alert('请先选择 .abc 文件'); return; }
+  const name = f.name.replace(/\.(abc|txt)$/i, '');
+  const text = await f.text();
+  msg('upload-msg', '正在校验并入库……');
+  try {
+    const r = await fetch('/api/melodies/upload', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, abc: text})});
+    const d = await r.json();
+    if (!r.ok) { msg('upload-msg', d.error || ('失败 ' + r.status), 'err'); return; }
+    await loadMelodies();
+    document.getElementById('melody_sel').value = d.name;
+    msg('upload-msg', `已入库并选中「${d.name}」。`, 'ok');
+  } catch (e) {
+    msg('upload-msg', '请求失败:' + e.message, 'err');
+  }
+}
+
+async function generateSong(){
+  const story = document.getElementById('story').value.trim();
+  if (!story) { alert('请先写故事'); return; }
+  const btn = document.getElementById('btn_llm');
+  btn.disabled = true;
+  msg('llm-msg', document.getElementById('melody_sel').value ? '正在按选定旋律填词,约 1~2 分钟……' : '正在调用 DeepSeek 创作词曲,约 1~2 分钟……');
+  try {
+    const r = await fetch('/api/llm/generate', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({story, melody: document.getElementById('melody_sel').value})});
+    const d = await r.json();
+    if (!r.ok) {
+      msg('llm-msg', d.error || ('失败 ' + r.status), 'err');
+      if (d.raw) { document.getElementById('song_json').value = d.raw; }
+      return;
+    }
+    document.getElementById('name').value = d.name;
+    document.getElementById('song_json').value = d.song_json;
+    document.getElementById('score_abc').value = d.score_abc;
+    msg('llm-msg', '词曲已生成并填入下方表单,检查满意就点「▶ 开始合成」;想改旋律可直接在 score.abc 里编辑。', 'ok');
+    document.getElementById('card-sing').scrollIntoView({behavior:'smooth'});
+  } catch (e) {
+    msg('llm-msg', '请求失败:' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadExample(){
+  const d = await (await fetch('/api/example')).json();
+  document.getElementById('name').value = d.name;
+  document.getElementById('song_json').value = d.song_json;
+  document.getElementById('score_abc').value = d.score_abc;
+}
+
+async function refreshWorks(){
+  const d = await (await fetch('/api/works')).json();
+  document.getElementById('works_root').textContent = '作品目录:' + d.root;
+  const tb = document.querySelector('#works tbody');
+  tb.innerHTML = '';
+  for (const w of d.works) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${w.name}</td>
+      <td>${fmt(w.seconds)}</td>
+      <td>${fmtDate(w.mtime)}</td>
+      <td>${w.singed ? `<audio controls src="${w.audio_url}"></audio>` : '<span class="hint">未合成</span>'}</td>
+      <td>${w.has_abc ? '<span class="tag">有曲谱</span>' : '<span class="hint">模型自作</span>'}</td>`;
+    tb.appendChild(tr);
+  }
+  if (!d.works.length) tb.innerHTML = '<tr><td colspan="4" class="hint">还没有作品,先合成一首吧</td></tr>';
+}
+
+async function runCheck(){
+  const out = document.getElementById('check_out');
+  out.style.display = 'block';
+  out.textContent = '自检运行中…';
+  const d = await (await fetch('/api/check', {method:'POST'})).json();
+  out.textContent = d.text;
+}
+
+refreshWorks();
+loadKey();
+loadMelodies();
+</script>
+</body>
+</html>

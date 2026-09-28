@@ -37,6 +37,7 @@ DIR_E2E = BASE / "4-e2e"
 SVC_URL = "http://127.0.0.1:6843"
 TTS_URL = "http://127.0.0.1:9880"
 RVC_URL = "http://127.0.0.1:7865"
+MUSIC_URL = "http://127.0.0.1:7866"
 
 STATIC_DIR = ROOT / "static"
 OUT_DIR = ROOT / "输出"
@@ -191,6 +192,17 @@ def service_status():
     items.append({"id": "rvc", "name": "RVC 换声/训练 WebUI", "dir": "1-rvc",
                   "url": RVC_URL, "port": 7865, "up": rvc_up,
                   "detail": ("%d 个音色" % len(rvc_roles())) if rvc_up else "未启动"})
+
+    music_up, music_detail = False, "未启动"
+    try:
+        st, data, _ = fetch(MUSIC_URL + "/api/health", timeout=3)
+        music_up = st == 200 and json.loads(data.decode("utf-8", "replace")).get("status") == "ok"
+        if music_up:
+            music_detail = "YuE2 就绪"
+    except Exception:
+        pass
+    items.append({"id": "music", "name": "做音乐 故事变歌曲", "dir": "做音乐",
+                  "url": MUSIC_URL, "port": 7866, "up": music_up, "detail": music_detail})
 
     e2e_ok = (svc_up and (DIR_E2E / "runtime" / "py312" / "python.exe").is_file()
               and (DIR_E2E / "e2e_test.py").is_file())
@@ -399,6 +411,16 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/svc/models":
             _, data, _ = fetch(SVC_URL + "/models", timeout=15)
+            try:
+                # svc_service 返回 {角色: {speakers, loaded, ...}} 字典；
+                # 前端只要名字数组，这里做一次形状适配
+                roles = json.loads(data.decode("utf-8", "replace"))
+                if isinstance(roles, dict):
+                    names = sorted(roles.keys(),
+                                   key=lambda k: (not roles[k].get("loaded"), k))
+                    return self.send_json(names)
+            except Exception:
+                pass
             return self.send_bytes(data, CONTENT_TYPES[".json"])
 
         if path == "/api/tts/roles":

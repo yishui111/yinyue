@@ -39,6 +39,21 @@ def clone_dir(src: Path, dst: Path):
     return n_files, n_skip
 
 
+def runtime_okay(py: Path) -> bool:
+    """runtime 健康检查：能起进程且标准库完整（urllib/json/ssl 都能导入）。
+
+    目录搬移/拷贝中断会留下「有 python.exe 但缺标准库」的残缺环境，
+    只看 python.exe 存在与否会把这种环境误判为已安装。
+    """
+    import subprocess
+    try:
+        p = subprocess.run([str(py), "-c", "import urllib.request, json, ssl"],
+                           capture_output=True, text=True, timeout=60)
+    except OSError:
+        return False
+    return p.returncode == 0
+
+
 def main():
     src_root = ROOT.parent
     candidates = [Path(sys.argv[1])] if len(sys.argv) > 1 else \
@@ -49,9 +64,11 @@ def main():
               % "、".join(str(c) for c in candidates))
         sys.exit(1)
     dst = ROOT / "runtime" / "py312"
-    if (dst / "python.exe").is_file():
-        print(r"[提示] 本项目已有 runtime\py312，不用克隆。")
+    if (dst / "python.exe").is_file() and runtime_okay(dst / "python.exe"):
+        print(r"[提示] 本项目已有可用的 runtime\py312，不用克隆。")
         return
+    if (dst / "python.exe").is_file():
+        print(r"[警告] 已有 runtime\py312 但健康检查不过（缺文件），补齐缺失文件。")
     print("克隆 %s -> %s （硬链接，不占磁盘）" % (src, dst), flush=True)
     t0 = time.time()
     n, skip = clone_dir(src, dst)

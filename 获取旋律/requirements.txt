@@ -1,0 +1,9 @@
+# 旋律工作台依赖（重构后已去掉音频分析的大模型：demucs / faster-whisper / torch）
+fastapi>=0.110
+uvicorn[standard]>=0.29
+numpy<2.1
+scipy>=1.11
+soundfile>=0.12
+librosa>=0.10
+mido>=1.3
+requests>=2.31

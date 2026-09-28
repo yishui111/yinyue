@@ -1,0 +1,23 @@
+输入: G:\xmgousi\音乐模型\4-e2e\testdata\输入.mp4
+角色: furina
++ G:\xmgousi\音乐模型\4-e2e\runtime\ffmpeg\ffmpeg.exe -y -i G:\xmgousi\音乐模型\4-e2e\testdata\输入.mp4 -vn -ac 1 -ar 44100 G:\xmgousi\音乐模型\4-e2e\输出\中间产物\01_full_mix.wav
+[1/5] 音轨: 31.97s @ 44100Hz
+[2/5] 人声分离(bs_roformer)，首次要加载模型，请稍候...
+07:22:08 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:820 | Using device: cuda, device_ids: [0]
+07:22:19 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:1088 | Separator params: model_type: bs_roformer_hyperace, model_path: G:\xmgousi\音乐模型\4-e2e\models\pymss\vocal\vocal_extraction\bs_roformer_voc_hyperacev2.ckpt, config_path: G:\xmgousi\音乐模型\4-e2e\models\pymss\vocal\vocal_extraction\bs_roformer_voc_hyperacev2.yaml, output_folder: results, save_as_folder: False
+07:22:19 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:1091 | Audio params: output_format: wav, audio_params: {'wav_bit_depth': 'FLOAT', 'flac_bit_depth': 'PCM_24', 'mp3_bit_rate': '320k', 'm4a_bit_rate': '512k', 'm4a_codec': 'aac', 'm4a_aac_at_quality': 2}
+07:22:19 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:1092 | Model params: instruments: ['vocals', 'instrument'], target_instrument: vocals
+07:22:19 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:1095 | Model params: batch_size: 2, standardize: False, normalize: True, use_tta: False
+07:22:19 | INF | runtime\py312\Lib\site-packages\pymss\separator.py:1106 | MSS model params: chunk_size: None, overlap_size: 48000, stem_batch_size: None
+07:22:29 | WAR | runtime\py312\Lib\site-packages\pymss\separator.py:389 | Track is mono, but model is stereo, adding a second channel.
+G:\xmgousi\音乐模型\4-e2e\runtime\py312\Lib\site-packages\pymss_core\modules\bs_roformer\transformer.py:69: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\EmptyTensor.cpp:57.)
+  rot = torch.complex(cos[..., ::2], sin[..., ::2])
+      分离完成 19.3s
+[3/5] so-vits 换声 -> furina ...
+      换声完成 5.0s
+[4/5] 混音...
++ G:\xmgousi\音乐模型\4-e2e\runtime\ffmpeg\ffmpeg.exe -y -i G:\xmgousi\音乐模型\4-e2e\输出\中间产物\04_vocal_furina.wav -i G:\xmgousi\音乐模型\4-e2e\输出\中间产物\03_instrumental.wav -filter_complex [0:a][1:a]amix=inputs=2:duration=first:normalize=0[m] -map [m] -ar 44100 G:\xmgousi\音乐模型\4-e2e\输出\中间产物\05_mixed.wav
+[5/5] 封装回视频...
++ G:\xmgousi\音乐模型\4-e2e\runtime\ffmpeg\ffmpeg.exe -y -i G:\xmgousi\音乐模型\4-e2e\testdata\输入.mp4 -i G:\xmgousi\音乐模型\4-e2e\输出\中间产物\05_mixed.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -shortest G:\xmgousi\音乐模型\4-e2e\输出\输出_furina.mp4
+
+[完成] 输出\输出_furina.mp4  总耗时 127.1s

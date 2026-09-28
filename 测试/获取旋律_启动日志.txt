@@ -1,0 +1,10 @@
+Starting workbench (watchdog + server)...
+
+================================================
+ Workbench is running: http://127.0.0.1:17865
+ A watchdog keeps the server alive and restarts
+ it automatically if it ever goes down.
+ To stop: double-click the other bat file.
+================================================
+
+请按任意键继续. . . 

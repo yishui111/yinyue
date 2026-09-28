@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>旋律工作台 · 选旋律 → 填词 → 演唱</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>🎼 旋律工作台</h1>
+  <div class="spacer"></div>
+  <span id="status" class="status">加载中…</span>
+  <button id="btn-cfg" class="ghost">⚙ 设置</button>
+</header>
+
+<main>
+  <aside>
+    <section class="card">
+      <h2>1 · 选一段旋律</h2>
+      <div id="melody-list" class="songlist"></div>
+      <div class="btnrow"><button id="btn-refresh">刷新曲库</button>
+        <button id="btn-melodydoc">📖 旋律生成文档（给 DeepSeek）</button></div>
+      <details>
+        <summary>➕ 导入旋律（粘贴 DeepSeek 回复的 JSON）</summary>
+        <input id="imp-name" placeholder="旋律名称（可选，默认用 title）">
+        <textarea id="imp-text" rows="6" placeholder="把 DeepSeek 回复的 JSON 粘到这里"></textarea>
+        <button id="btn-import" type="button" class="primary2">导入到旋律库</button>
+        <p class="hint">也可以直接把 JSON 存成 .json 文件放进项目的 melodies 文件夹，点「刷新曲库」。</p>
+      </details>
+      <textarea id="melodydoc-box" rows="6" style="display:none" readonly></textarea>
+      <button id="btn-copydoc" style="display:none" type="button">复制旋律生成文档</button>
+    </section>
+
+    <section class="card" id="step2">
+      <h2>2 · 填新词</h2>
+      <div id="no-melody" class="hint">先在上方选一段旋律。</div>
+      <div id="fill-area" style="display:none">
+        <textarea id="story" rows="3" placeholder="新歌要讲的故事（会自动写进填词文档）"></textarea>
+        <textarea id="extra" rows="2" placeholder="附加要求（可选）：押韵/风格/字数微调"></textarea>
+        <button id="btn-filldoc" class="primary">① 生成填词约束文档</button>
+        <textarea id="filldoc-box" rows="8" readonly placeholder="点上面按钮，完整填词文档会出现在这里"></textarea>
+        <button id="btn-copyfill" type="button">② 复制文档 → 去 DeepSeek 对话框发送</button>
+        <textarea id="ds-reply" rows="6" placeholder="③ 把 DeepSeek 回复的 JSON 粘到这里"></textarea>
+        <button id="btn-apply" type="button" class="primary2">④ 应用填词（逐字校验）</button>
+        <button id="btn-clearfill" type="button" class="ghost">还原原词</button>
+        <p class="hint">也可以直接在右侧旋律表格里逐字手改（改完自动保存）。</p>
+      </div>
+    </section>
+
+    <section class="card" id="step3">
+      <h2>3 · 演唱 / 试听 / 导出</h2>
+      <div id="no-melody2" class="hint">先在上方选一段旋律。</div>
+      <div id="sing-area" style="display:none">
+        <label class="row">音色名（GPT-SoVITS 控制页里的声音模型）
+          <input id="sing-voice" placeholder="如：myvoice_test">
+        </label>
+        <label class="row"><input type="checkbox" id="sing-short"> 只合成前 60 秒（快速试听，推荐首次用）</label>
+        <button id="btn-sing" class="primary">🎤 按旋律唱出来（GPT-SoVITS）</button>
+        <p class="hint">需先启动你的「GPT-SoVITS 声音模型」控制页。首次合成要加载音色（几分钟），之后每字几秒。哼鸣可秒出。</p>
+        <div class="btnrow">
+          <button data-fmt="hum">▶ 哼鸣试听</button>
+          <button data-fmt="karaoke">🎬 卡拉OK视频</button>
+          <button data-fmt="midi">MIDI</button>
+          <button data-fmt="musicxml">MusicXML</button>
+          <button data-fmt="ust">UST</button>
+        </div>
+        <audio id="audio" controls style="width:100%;margin-top:8px"></audio>
+      </div>
+      <div id="prog" style="display:none">
+        <div class="prog-line"><span id="prog-detail"></span><span id="prog-elapsed" class="elapsed"></span></div>
+        <pre id="prog-log"></pre>
+      </div>
+    </section>
+  </aside>
+
+  <section id="editor">
+    <div id="songbar" style="display:none">
+      <input id="title" class="title">
+      <span id="meta" class="meta"></span>
+      <button id="btn-save" class="ghost">💾 保存修改</button>
+    </div>
+    <div id="lines"></div>
+    <div id="empty" class="empty">左侧选一段旋律开始。<br>没有旋律？点「旋律生成文档」→ 复制 → 发给 DeepSeek 网页对话框 →<br>把回复的 JSON 用「导入旋律」放进曲库。</div>
+  </section>
+</main>
+
+<div id="modal" class="modal" style="display:none">
+  <div class="modal-box card">
+    <h2>设置</h2>
+    <label>GPT-SoVITS 控制页地址<input id="cfg-url"></label>
+    <label>默认音色名<input id="cfg-voice" placeholder="如：myvoice_test"></label>
+    <label>GPT-SoVITS 项目目录（看门狗守护用）<input id="cfg-dir"></label>
+    <div class="btnrow">
+      <button id="cfg-save" class="primary">保存</button>
+      <button id="cfg-close" class="ghost">取消</button>
+    </div>
+    <p class="hint">保存在本目录 config.json。</p>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

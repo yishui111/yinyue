@@ -1,0 +1,12 @@
+# 密钥与运行时产物,不入库
+config.json
+.server.pid
+服务日志.txt
+服务崩溃.txt
+__pycache__/
+# 大体积内容(文件夹复制迁移时需要,git 不跟踪)
+YuE/
+runtime/
+weights/
+作品/
+工具/缓存/

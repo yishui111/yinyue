@@ -1,0 +1,19 @@
+G:\xmgousi\音乐模型\获取旋律\server.py:47: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [16528]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:17865 (Press CTRL+C to quit)
+旋律工作台: http://127.0.0.1:17865
+INFO:     127.0.0.1:5333 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5333 - "GET /static/style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5334 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5338 - "GET /api/melodies HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5339 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:5338 - "GET /api/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:7109 - "GET /api/health HTTP/1.1" 404 Not Found

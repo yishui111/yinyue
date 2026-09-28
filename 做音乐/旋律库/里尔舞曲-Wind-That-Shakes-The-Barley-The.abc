@@ -1,0 +1,25 @@
+X:1
+T:
+M:4/4
+L:1/16
+Q:1/4=110
+V: Vocal clef=treble name="Vocal Melody" snm="Vocal"
+V: Ins clef=treble name="Ins Melody" snm="Inst."
+K:Em
+% 传统曲转换(无和弦,建议 cot=melody)
+V: Vocal
+b4g2c2b2g2f2e2|c4c2b2c2d2e2c2|b4g2c2b2g2f2e2|a2g2f2e2c2d2e2c2|
+V: Ins
+Z4|
+V: Vocal
+b6c2b2g2f2g2|e2c2c2b2c2d2e2c2|b4g2c2b2g2f2e2|a2g2f2e2c2d2e2f2|
+V: Ins
+Z4|
+V: Vocal
+g6e2a6f2|g6e2c2d2e2f2|g6e2a4g2a2|b2g2f2e2c2d2e2f2|
+V: Ins
+Z4|
+V: Vocal
+g6e2a6f2|g6e2c2d2e2f2|e2f2g2a2b2g2c'2g2|b2g2f2e2c2d2e2c2|
+V: Ins
+Z4|
